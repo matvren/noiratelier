@@ -425,11 +425,25 @@ app.get('/api/admin/orders', requireOwner, (_req, res) => {
 });
 
 // ---------- static ----------
-app.use(express.static(path.join(__dirname, 'public')));
-app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+const publicDir = path.join(__dirname, 'public');
+const indexPath = path.join(publicDir, 'index.html');
+
+app.use(express.static(publicDir));
+app.get('*', (_req, res) => {
+  if (!fs.existsSync(indexPath)) {
+    console.error('index.html NOT FOUND at:', indexPath);
+    console.error('publicDir contents:', fs.readdirSync(publicDir));
+    return res.status(200).send('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>NOIR ATELIER</title></head><body style="background:#0a0a0b;color:#e5dcca;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><div style="text-align:center"><h1 style="font-weight:300;letter-spacing:0.2em">NOIR ATELIER</h1><p style="color:#b8975a">Loading…</p></div></body></html>');
+  }
+  res.sendFile(indexPath);
+});
 
 app.listen(PORT, () => {
   console.log(`\n  NOIR ATELIER running → ${BASE_URL}`);
   console.log(`  Stripe payments: removed`);
   console.log(`  Owner email: ${OWNER_EMAIL}\n`);
+  console.log(`  __dirname: ${__dirname}`);
+  console.log(`  public exists: ${fs.existsSync(publicDir)}`);
+  console.log(`  index.html exists: ${fs.existsSync(indexPath)}`);
+  try { console.log(`  public/ files: ${fs.readdirSync(publicDir).join(', ')}`); } catch (e) { console.log('  public/ not readable'); }
 });
