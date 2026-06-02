@@ -4,3 +4,6 @@ noir.db
 noir.db-shm
 noir.db-wal
 *.log
+
+# nested empty repo
+/atelier
