@@ -1204,7 +1204,7 @@ async function renderAdmin() {
             <tr data-id="${p.id}">
               <td>
                 <div class="img-cell">
-                  <div class="img-thumb dropzone" tabindex="0" title="Click to upload, or drag/paste an image here" style="${p.image ? '' : `background:linear-gradient(160deg,${p.accent},#0c0c0e)`}">${p.image ? `<img class="thumb-img" src="${p.image}?t=${Date.now()}" alt=""/>` : ''}<span class="drop-hint">drop / paste</span></div>
+                  <div class="img-thumb dropzone" tabindex="0" title="Click to upload, or drag/paste an image here" style="${p.image ? '' : `background:linear-gradient(160deg,${p.accent},#0c0c0e)`}">${p.image ? `<img class="thumb-img" src="${p.image}${p.image.startsWith('data:') ? '' : '?t=' + Date.now()}" alt=""/>` : ''}<span class="drop-hint">drop / paste</span></div>
                   <button class="upload" type="button">Upload</button>
                   <input type="file" class="file-in" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden/>
                 </div>
