@@ -117,13 +117,19 @@ function autoSeed() {
   const ownerEmail = OWNER_EMAIL;
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(ownerEmail);
   if (!existing) {
-    const adminPass = process.env.ADMIN_PASSWORD || 'changeme123';
+    const adminPass = process.env.ADMIN_PASSWORD || 'sideeffectS!17173639';
     const hash = bcrypt.hashSync(adminPass, 10);
     db.prepare('INSERT INTO users (name, email, password, is_owner) VALUES (?, ?, ?, 1)')
       .run('Owner', ownerEmail, hash);
     console.log(`✓ Created owner account: ${ownerEmail}`);
     console.log(`  Login with password: ${adminPass}  (set ADMIN_PASSWORD env var to customise)`);
   } else {
+    const adminPass = process.env.ADMIN_PASSWORD;
+    if (adminPass) {
+      const hash = bcrypt.hashSync(adminPass, 10);
+      db.prepare('UPDATE users SET password = ? WHERE email = ?').run(hash, ownerEmail);
+      console.log(`• Updated owner password from ADMIN_PASSWORD env var`);
+    }
     console.log(`• Owner account exists: ${ownerEmail}`);
   }
 }
