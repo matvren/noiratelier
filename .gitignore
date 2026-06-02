@@ -1,0 +1,6 @@
+node_modules/
+.env
+noir.db
+noir.db-shm
+noir.db-wal
+*.log

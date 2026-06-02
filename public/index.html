@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NOIR ATELIER — Fragrance, refined.</title>
+  <meta name="description" content="NOIR ATELIER — a curated collection of designer & niche fragrances." />
+  <script>
+    // Measure scrollbar width as early as possible and inject CSS variable to avoid layout shift
+    (function(){
+      try {
+        var d = document.createElement('div');
+        d.style.width = '100px'; d.style.height = '100px'; d.style.overflow = 'scroll'; d.style.position = 'absolute'; d.style.top = '-9999px';
+        document.documentElement.appendChild(d);
+        var sw = d.offsetWidth - d.clientWidth;
+        d.parentNode.removeChild(d);
+        var s = document.createElement('style');
+        s.textContent = ':root{--scrollbar-w:' + sw + 'px;}';
+        document.head.appendChild(s);
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- NAVBAR -->
+  <header class="nav">
+    <a class="brand" href="#" data-link="shop">
+      <span class="brand-text">NOIR <span>ATELIER</span></span>
+      <span class="brand-rule"></span>
+    </a>
+
+    <!-- search will be embedded into hero; keep a compact trigger here for small screens -->
+    <div class="nav-search" id="navSearch">
+      <button class="nav-search-btn" id="searchBtn" aria-haspopup="true">
+        <span class="sic">⌕</span><span class="sphold" id="searchLabel">Search the collection</span>
+      </button>
+      <div class="search-panel" id="searchPanel" hidden>
+        <input id="searchInput" type="text" placeholder="Type a name, brand or note…" autocomplete="off"/>
+        <div class="search-section" id="searchResultsWrap" hidden>
+          <div class="search-h">Matches</div>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <div class="search-foot">
+          <button class="search-clear-all" id="searchReset">Clear</button>
+          <button class="search-apply" id="searchApply">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav-links">
+      <a href="#" data-link="shop">Collection</a>
+      <a href="#" data-link="about">House</a>
+      <a href="#" data-link="contact">Contact</a>
+      <a href="#" data-link="admin" id="adminLink" hidden>Admin</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn ghost" id="wishBtn" aria-label="Favourites">
+        ♡ <span class="cart-count" id="wishCount">0</span>
+      </button>
+      <button class="icon-btn" id="cartBtn" aria-label="Cart">
+        Cart <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="icon-btn ghost" id="authBtn">Sign in</button>
+    </div>
+  </header>
+
+  <main id="view"></main>
+
+  <!-- CART DRAWER -->
+  <aside class="drawer" id="cartDrawer" aria-hidden="true">
+    <div class="drawer-head">
+      <h3>Your Cart</h3>
+      <button class="icon-btn ghost" id="closeCart">✕</button>
+    </div>
+    <div id="cartBody" class="drawer-body"></div>
+    <div class="drawer-foot" id="cartFoot"></div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <!-- AUTH MODAL -->
+  <div class="modal-wrap" id="authModal" hidden>
+    <div class="modal">
+      <button class="modal-close" id="authClose">✕</button>
+      <h2 id="authTitle">Sign in</h2>
+      <p class="modal-sub" id="authSub">Welcome back to the atelier.</p>
+      <form id="authForm">
+        <label id="nameField" hidden>
+          <span>Name</span>
+          <input type="text" name="name" autocomplete="name" placeholder="Your name" />
+        </label>
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" autocomplete="email" placeholder="you@email.com" required />
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" autocomplete="current-password" placeholder="••••••••" required />
+        </label>
+        <p class="form-error" id="authError"></p>
+        <button type="submit" class="btn-primary" id="authSubmit">Sign in</button>
+      </form>
+      <p class="modal-switch">
+        <span id="switchText">New here?</span>
+        <a href="#" id="switchLink">Create an account</a>
+      </p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div>NOIR ATELIER</div>
+    <div class="footer-small">Curated fragrances · Secure checkout by Revolut ~ WhatsApp · © <span id="year"></span></div>
+  </footer>
+
+  <!-- QUICK VIEW MODAL -->
+  <div class="modal-wrap" id="quickModal" hidden></div>
+  <!-- CONFIRMATION MODAL -->
+  <div class="modal-wrap" id="confirmModal" hidden></div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
