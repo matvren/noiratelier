@@ -1170,7 +1170,7 @@ async function logout() {
 // ---------- admin ----------
 async function renderAdmin() {
   if (!(state.user && state.user.is_owner)) {
-    $('#view').innerHTML = `<section class="section"><div class="notice">Owner access only. Please sign in with the owner account.</div></section>`;
+    location.hash = '#shop';
     return;
   }
   const products = await api('/api/admin/products');
