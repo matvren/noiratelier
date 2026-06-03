@@ -1184,21 +1184,29 @@ async function renderAdmin() {
 
       <div class="card-panel">
         <h3>Add a new fragrance</h3>
-        <div class="new-grid">
+        <div class="form-row-2">
           <div class="field"><span>Name</span><input id="n_name" placeholder="Sauvage EDP"/></div>
           <div class="field"><span>Brand</span><input id="n_brand" placeholder="Dior"/></div>
+        </div>
+        <div class="form-row-2">
           <div class="field"><span>Notes</span><input id="n_notes" placeholder="Bergamot · Ambroxan"/></div>
           <div class="field"><span>Size</span><input id="n_size" placeholder="100ml"/></div>
-          <div class="field"><span>Price (€)</span><input id="n_price" type="number" step="0.01" placeholder="135.00"/></div>
-          <div class="field"><span>Accent colour</span><input id="n_accent" type="color" value="#b8975a" style="height:42px;padding:4px"/></div>
         </div>
-        <div class="field"><span>Description</span><input id="n_desc" placeholder="Short description"/></div>
-        <div class="field" id="nImgField"><span>Image (optional)</span>
-          <div style="display:flex;gap:12px;align-items:center">
-            <div class="img-thumb" id="nImgPreview" style="width:60px;height:60px;border-radius:8px;background:var(--bg-soft);border:1px dashed var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:24px;overflow:hidden;flex-shrink:0">+</div>
-            <button type="button" id="nImgBtn" style="background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer">Choose file</button>
+        <div class="form-row-2">
+          <div class="field"><span>Price (€)</span><input id="n_price" type="number" step="0.01" placeholder="135.00"/></div>
+          <div class="field"><span>Description</span><input id="n_desc" placeholder="A short line about the fragrance…"/></div>
+        </div>
+        <div class="field"><span>Image <span style="font-weight:400;text-transform:none;color:var(--muted-2)">(optional)</span></span>
+          <div class="add-drop" id="nDrop">
+            <div class="add-drop-inner" id="nImgPreview">
+              <span class="add-drop-icon" id="nDropIcon">+</span>
+              <span class="add-drop-text">Drop an image here or click to browse</span>
+            </div>
             <input type="file" id="nImgFile" accept="image/png,image/jpeg,image/webp,image/avif" hidden/>
-            <button type="button" id="nImgClear" style="background:none;border:none;color:var(--muted-2);font-size:12px;cursor:pointer;display:none">✕</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button type="button" id="nImgBtn" class="btn-sm" style="font-size:12px">Choose file</button>
+            <button type="button" id="nImgClear" class="btn-sm" style="font-size:12px;display:none;color:var(--muted-2)">✕ Clear</button>
           </div>
         </div>
         <button class="btn-primary" id="addProduct" style="width:auto">Add fragrance</button>
@@ -1259,20 +1267,55 @@ async function renderAdmin() {
     </section>`;
 
   let _newImgDataUrl = null;
-  const nPreview = $('#nImgPreview');
   const nFileIn = $('#nImgFile');
   const nClear = $('#nImgClear');
-  $('#nImgBtn').onclick = () => nFileIn.click();
-  nPreview.onclick = () => nFileIn.click();
-  nClear.onclick = () => { _newImgDataUrl = null; nPreview.innerHTML = '+'; nFileIn.value = ''; nClear.style.display = 'none'; };
-  nFileIn.onchange = async () => {
-    const f = nFileIn.files[0];
+  const nDrop = $('#nDrop');
+  const nDropInner = $('#nImgPreview');
+  const nDropIcon = $('#nDropIcon');
+  function setNewImg(dataUrl) {
+    _newImgDataUrl = dataUrl;
+    nDropInner.innerHTML = `<img src="${dataUrl}" class="add-drop-img"/>`;
+    nDrop.classList.add('has-img');
+    nClear.style.display = '';
+  }
+  function clearNewImg() {
+    _newImgDataUrl = null; nFileIn.value = '';
+    nDrop.classList.remove('has-img');
+    nDropInner.innerHTML = '<span class="add-drop-icon" id="nDropIcon">+</span><span class="add-drop-text">Drop an image here or click to browse</span>';
+    nClear.style.display = 'none';
+  }
+  async function handleNewFile(f) {
     if (!f) return;
     if (!/^image\//.test(f.type)) return toast('Not an image file');
     if (f.size > 8 * 1024 * 1024) return toast('Image too large (max 8MB)');
-    _newImgDataUrl = await fileToDataUrl(f);
-    nPreview.innerHTML = `<img src="${_newImgDataUrl}" style="width:100%;height:100%;object-fit:cover"/>`;
-    nClear.style.display = 'inline';
+    setNewImg(await fileToDataUrl(f));
+  }
+  async function handleNewUrl(url) {
+    if (url) setNewImg(url);
+  }
+  $('#nImgBtn').onclick = () => nFileIn.click();
+  nDrop.onclick = () => nFileIn.click();
+  nClear.onclick = clearNewImg;
+  nFileIn.onchange = () => handleNewFile(nFileIn.files[0]);
+  // drag & drop
+  nDrop.addEventListener('dragenter', (e) => { e.preventDefault(); nDrop.classList.add('dragover'); });
+  nDrop.addEventListener('dragover', (e) => { e.preventDefault(); nDrop.classList.add('dragover'); });
+  nDrop.addEventListener('dragleave', () => nDrop.classList.remove('dragover'));
+  nDrop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    nDrop.classList.remove('dragover');
+    const dt = e.dataTransfer;
+    if (dt.files && dt.files.length) return handleNewFile(dt.files[0]);
+    const url = dt.getData('text/uri-list') || dt.getData('text/plain');
+    if (url && /^https?:\/\//i.test(url)) return handleNewUrl(url);
+  });
+  // paste
+  nDrop.addEventListener('paste', (e) => {
+    const items = e.clipboardData?.items || [];
+    for (const it of items) {
+      if (it.type.startsWith('image/')) { e.preventDefault(); return handleNewFile(it.getAsFile()); }
+    }
+  });
   };
 
   $('#addProduct').onclick = async () => {
@@ -1282,7 +1325,7 @@ async function renderAdmin() {
       notes: $('#n_notes').value.trim(),
       size: $('#n_size').value.trim(),
       description: $('#n_desc').value.trim(),
-      accent: $('#n_accent').value,
+      accent: '#b8975a',
       price: Math.round(parseFloat($('#n_price').value || '0') * 100),
     };
     if (!body.name || !body.brand || !body.price) return toast('Name, brand and price required');
@@ -1312,7 +1355,7 @@ async function renderAdmin() {
       tbody.prepend(row);
       bindRow(row);
       $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = '';
-      nPreview.innerHTML = '+'; nFileIn.value = '';
+      clearNewImg();
       toast('Fragrance added');
     } catch (e) { toast(e.message); }
   };
