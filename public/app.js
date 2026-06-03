@@ -1467,17 +1467,16 @@ function bindGlobal() {
   function closeMenu() { toggleMenu(false); }
   menuToggle.onclick = () => toggleMenu(!mobileMenu.classList.contains('open'));
   mobileOverlay.onclick = closeMenu;
-  // nav links: close menu with animation, then navigate
+  // favourites button → wishlist view
+  $('#wishBtn').onclick = () => { location.hash = '#wishlist'; };
+
+  $$('[data-link]').forEach((a) => a.onclick = (e) => { e.preventDefault(); location.hash = '#' + a.dataset.link; });
+  // mobile menu links: override data-link handler — close menu first, then navigate
   mobileMenu.querySelectorAll('a').forEach(el => {
     el.onclick = (e) => { e.preventDefault(); closeMenu(); setTimeout(() => { location.hash = '#' + el.dataset.link; }, 150); };
   });
   // auth button in mobile menu: close menu then open auth / logout
   $('#authBtnMob').onclick = () => { closeMenu(); setTimeout(() => { state.user ? logout() : openAuth('login'); }, 150); };
-
-  // favourites button → wishlist view
-  $('#wishBtn').onclick = () => { location.hash = '#wishlist'; };
-
-  $$('[data-link]').forEach((a) => a.onclick = (e) => { e.preventDefault(); location.hash = '#' + a.dataset.link; });
   window.addEventListener('hashchange', route);
 }
 
