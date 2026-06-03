@@ -65,13 +65,12 @@ button{font-family:inherit;cursor:pointer}
   border-bottom:1px solid var(--line);
 }
 .nav .nav-actions{margin-left:auto}
-.brand{display:flex;flex-direction:column;gap:5px;line-height:1;flex-shrink:0}
-.brand{min-width:220px}
-.brand-text{font-family:var(--serif);font-size:23px;letter-spacing:6px;font-weight:600;color:var(--text);padding-left:2px}
-.brand-text{display:inline-block;white-space:nowrap}
-.brand-text span{color:var(--gold);font-weight:600}
-.brand-rule{height:1px;width:100%;background:linear-gradient(90deg,var(--gold),transparent)}
-.brand:hover .brand-rule{background:linear-gradient(90deg,var(--gold-soft),transparent)}
+.brand{display:flex;flex-direction:column;gap:2px;line-height:1;flex-shrink:0}
+.brand{min-width:140px}
+.brand-top{font-family:var(--sans);font-size:10px;letter-spacing:4.5px;font-weight:400;color:var(--muted);text-transform:uppercase;padding-left:1px}
+.brand-name{font-family:var(--serif);font-size:26px;letter-spacing:5.5px;font-weight:600;color:var(--gold);padding-left:2px;margin-top:-2px}
+.brand-rule{height:1px;width:70%;background:linear-gradient(90deg,var(--gold),transparent);margin-top:1px;transition:width .4s var(--ease-smooth)}
+.brand:hover .brand-rule{width:100%;background:linear-gradient(90deg,var(--gold-soft),transparent)}
 
 /* nav search dropdown */
 .nav-search{position:relative;flex:1;max-width:420px}
