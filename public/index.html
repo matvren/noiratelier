@@ -65,9 +65,23 @@
       <button class="icon-btn" id="cartBtn" aria-label="Cart">
         Cart <span class="cart-count" id="cartCount">0</span>
       </button>
-      <button class="icon-btn ghost" id="authBtn">Sign in</button>
+      <button class="icon-btn ghost nav-auth-desk" id="authBtn">Sign in</button>
+      <button class="menu-btn" id="menuToggle" aria-label="Menu">
+        <span class="menu-bar"></span><span class="menu-bar"></span><span class="menu-bar"></span>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <div class="mobile-menu-inner">
+        <a href="#" data-link="shop">Collection</a>
+        <a href="#" data-link="about">House</a>
+        <a href="#" data-link="contact">Contact</a>
+        <a href="#" data-link="admin" id="adminLinkMob" hidden>Admin</a>
+        <hr/>
+        <button id="authBtnMob">Sign in</button>
+      </div>
     </div>
   </header>
+  <div class="mobile-overlay" id="mobileOverlay"></div>
 
   <main id="view"></main>
 

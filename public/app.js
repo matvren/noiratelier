@@ -224,6 +224,10 @@ async function refreshCart() {
 function syncAuthUI() {
   $('#authBtn').textContent = state.user ? 'Sign out' : 'Sign in';
   $('#adminLink').hidden = !(state.user && state.user.is_owner);
+  $('#adminLinkMob').hidden = !(state.user && state.user.is_owner);
+  const mobBtn = $('#authBtnMob');
+  mobBtn.textContent = state.user ? 'Sign out — ' + state.user.name : 'Sign in';
+  mobBtn.onclick = state.user ? () => { logout(); } : () => { openAuth('login'); };
   if (state.user && state.user.is_owner) startAdminPoll(); else stopAdminPoll();
 }
 
@@ -1451,6 +1455,28 @@ function bindGlobal() {
   // keep panel open when clicking inside it
   $('#searchPanel').onclick = (e) => e.stopPropagation();
   document.addEventListener('click', (e) => { if (!e.target.closest('#navSearch')) closeSearchPanel(); });
+
+  // mobile menu toggle
+  const menuToggle = $('#menuToggle');
+  const mobileMenu = $('#mobileMenu');
+  const mobileOverlay = $('#mobileOverlay');
+  function toggleMenu(open) {
+    menuToggle.classList.toggle('open', open);
+    mobileMenu.classList.toggle('open', open);
+    mobileOverlay.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+  menuToggle.onclick = () => toggleMenu(!mobileMenu.classList.contains('open'));
+  mobileOverlay.onclick = () => toggleMenu(false);
+  mobileMenu.querySelectorAll('a, button').forEach(el => el.onclick = () => toggleMenu(false));
+  function syncMobileAuth() {
+    const mobBtn = $('#authBtnMob');
+    if (state.user) {
+      mobBtn.textContent = 'Sign out — ' + state.user.name;
+    } else {
+      mobBtn.textContent = 'Sign in';
+    }
+  }
 
   // favourites button → wishlist view
   $('#wishBtn').onclick = () => { location.hash = '#wishlist'; };
