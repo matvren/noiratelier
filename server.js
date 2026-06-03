@@ -438,7 +438,7 @@ app.get('*', (_req, res) => {
   res.sendFile(indexPath);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, process.env.HOST || process.env.IP || '0.0.0.0', () => {
   console.log(`\n  NOIR ATELIER running → ${BASE_URL}`);
   console.log(`  DB: file:noir.db${process.env.GITHUB_TOKEN ? ' + GitHub sync' : ' (local only)'}`);
   console.log(`  Owner email: ${OWNER_EMAIL}\n`);
