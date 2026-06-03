@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import db from './db.js';
+import db, { setReady, ghUpload } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -117,6 +117,8 @@ async function autoSeed() {
   console.log(`  Owner login: ${ownerEmail} / ${adminPass}  (set ADMIN_PASSWORD env var to customise)`);
 }
 await autoSeed();
+setReady();
+ghUpload().catch(() => {}); // push initial state to GitHub
 
 // setup mail helper
 let mailer = null;
@@ -438,6 +440,6 @@ app.get('*', (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`\n  NOIR ATELIER running → ${BASE_URL}`);
-  console.log(`  DB: ${process.env.TURSO_DB_URL || 'file: (local)'}`);
+  console.log(`  DB: file:noir.db${process.env.GITHUB_TOKEN ? ' + GitHub sync' : ' (local only)'}`);
   console.log(`  Owner email: ${OWNER_EMAIL}\n`);
 });
