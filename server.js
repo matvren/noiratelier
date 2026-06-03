@@ -15,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || '35a746bb03340874a2e54fcafbc017526e5a224e0e9628f910e3ff7a5a8d3a13';
 const OWNER_EMAIL = (process.env.OWNER_EMAIL || 'numbell98@gmail.com').toLowerCase();
-const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const BASE_URL = process.env.BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${PORT}`);
 
 app.use(express.json({ limit: '12mb' }));
 app.use(cookieParser());
@@ -116,9 +116,11 @@ async function autoSeed() {
   }
   console.log(`  Owner login: ${ownerEmail} / ${adminPass}  (set ADMIN_PASSWORD env var to customise)`);
 }
-await autoSeed();
-setReady();
-ghUpload().catch(() => {}); // push initial state to GitHub
+await autoSeed(); // always seed if fresh (works on Vercel too)
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  setReady();
+  ghUpload().catch(() => {});
+}
 
 // setup mail helper
 let mailer = null;
@@ -438,8 +440,12 @@ app.get('*', (_req, res) => {
   res.sendFile(indexPath);
 });
 
-app.listen(PORT, process.env.HOST || process.env.IP || '0.0.0.0', () => {
-  console.log(`\n  NOIR ATELIER running → ${BASE_URL}`);
-  console.log(`  DB: file:noir.db${process.env.GITHUB_TOKEN ? ' + GitHub sync' : ' (local only)'}`);
-  console.log(`  Owner email: ${OWNER_EMAIL}\n`);
-});
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  app.listen(PORT, process.env.HOST || process.env.IP || '0.0.0.0', () => {
+    console.log(`\n  NOIR ATELIER running → ${BASE_URL}`);
+    console.log(`  DB: ${process.env.TURSO_DATABASE_URL ? 'Turso (remote)' : 'file:noir.db'}${process.env.GITHUB_TOKEN && !process.env.TURSO_DATABASE_URL ? ' + GitHub sync' : ''}`);
+    console.log(`  Owner email: ${OWNER_EMAIL}\n`);
+  });
+}
+
+export default app;
