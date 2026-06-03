@@ -1,60 +1,10 @@
 import { createClient } from '@libsql/client';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isVercel = !!process.env.VERCEL;
 const DB_PATH = isVercel ? '/tmp/noir.db' : path.join(__dirname, 'noir.db');
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
-const GH_OWNER = 'matvren';
-const GH_REPO = 'noiratelier';
-
-// ---- GitHub sync helpers ----
-async function ghDownload() {
-  if (!GITHUB_TOKEN) return 0;
-  const res = await fetch(
-    `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`,
-    { headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
-  );
-  if (res.ok) {
-    const { content } = await res.json();
-    fs.writeFileSync(DB_PATH, Buffer.from(content, 'base64'));
-    return 2;
-  }
-  if (res.status === 404) return 1;
-  return -1;
-}
-
-let ghSha = null;
-export async function ghUpload() {
-  if (!GITHUB_TOKEN) return;
-  try {
-    const content = fs.readFileSync(DB_PATH).toString('base64');
-    const getRes = await fetch(
-      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`,
-      { headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
-    );
-    if (getRes.ok) ghSha = (await getRes.json()).sha;
-    const putRes = await fetch(
-      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`,
-      {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'auto sync noir.db', content, sha: ghSha }),
-      }
-    );
-    if (putRes.ok) { ghSha = (await putRes.json()).content.sha; console.log('✓ Synced noir.db to GitHub'); }
-    else { const t = await putRes.text(); console.error('× GitHub sync error:', putRes.status, t.slice(0, 200)); }
-  } catch (e) { console.error('× GitHub sync:', e.message); }
-}
-
-// Restore DB from GitHub on startup
-const ghResult = await ghDownload();
-if (ghResult === 2) console.log('✓ Restored noir.db from GitHub');
-else if (ghResult === 1) console.log('• Starting fresh - no noir.db on GitHub yet');
-else if (ghResult === -1) console.warn('• GitHub download failed');
-else console.log('• No GITHUB_TOKEN set, using local file');
 
 const db = createClient({ url: `file:${DB_PATH}` });
 
@@ -94,19 +44,4 @@ if (!ocols.includes('customer_confirmed')) {
   try { await db.execute('ALTER TABLE orders ADD COLUMN customer_confirmed INTEGER DEFAULT 0'); } catch (e) { /* ignore */ }
 }
 
-// Auto-sync after writes
-let ready = false;
-const _exec = db.execute.bind(db);
-db.execute = async function (input) {
-  const result = await _exec(input);
-  if (ready) {
-    const sql = typeof input === 'string' ? input : input.sql;
-    if (/^\s*(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\b/i.test(sql.trim())) {
-      setImmediate(() => ghUpload().catch(() => {}));
-    }
-  }
-  return result;
-};
-
-export function setReady() { ready = true; }
 export default db;

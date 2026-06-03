@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import db, { setReady, ghUpload } from './db.js';
+import db from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -117,10 +117,6 @@ async function autoSeed() {
   console.log(`  Owner login: ${ownerEmail} / ${adminPass}  (set ADMIN_PASSWORD env var to customise)`);
 }
 await autoSeed();
-setReady();
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  ghUpload().catch(() => {});
-}
 
 // setup mail helper
 let mailer = null;
@@ -443,7 +439,7 @@ app.get('*', (_req, res) => {
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   app.listen(PORT, process.env.HOST || process.env.IP || '0.0.0.0', () => {
     console.log(`\n  NOIR ATELIER running → ${BASE_URL}`);
-    console.log(`  DB: file:noir.db${process.env.GITHUB_TOKEN ? ' + GitHub sync' : ' (local only)'}`);
+    console.log(`  DB: file:noir.db`);
     console.log(`  Owner email: ${OWNER_EMAIL}\n`);
   });
 }
