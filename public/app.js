@@ -1194,20 +1194,17 @@ async function renderAdmin() {
         </div>
         <div class="form-row-2">
           <div class="field"><span>Price (€)</span><input id="n_price" type="number" step="0.01" placeholder="135.00"/></div>
-          <div class="field"><span>Description</span><input id="n_desc" placeholder="A short line about the fragrance…"/></div>
+          <div class="field"><span>Description <span style="font-weight:400;text-transform:none;color:var(--muted-2)">auto-generated from notes</span></span><input id="n_desc" placeholder="A short line about the fragrance…"/></div>
         </div>
         <div class="field"><span>Image <span style="font-weight:400;text-transform:none;color:var(--muted-2)">(optional)</span></span>
           <div class="add-drop" id="nDrop">
             <div class="add-drop-inner" id="nImgPreview">
               <span class="add-drop-icon" id="nDropIcon">+</span>
-              <span class="add-drop-text">Drop an image here or click to browse</span>
+              <span class="add-drop-text">Click, drag & drop, or paste an image here</span>
             </div>
             <input type="file" id="nImgFile" accept="image/png,image/jpeg,image/webp,image/avif" hidden/>
           </div>
-          <div style="display:flex;gap:8px;margin-top:6px">
-            <button type="button" id="nImgBtn" class="btn-sm" style="font-size:12px">Choose file</button>
-            <button type="button" id="nImgClear" class="btn-sm" style="font-size:12px;display:none;color:var(--muted-2)">✕ Clear</button>
-          </div>
+          <button type="button" id="nImgClear" class="btn-sm" style="font-size:12px;display:none;color:var(--muted-2);margin-top:6px">✕ Clear image</button>
         </div>
         <button class="btn-primary" id="addProduct" style="width:auto">Add fragrance</button>
       </div>
@@ -1281,9 +1278,34 @@ async function renderAdmin() {
   function clearNewImg() {
     _newImgDataUrl = null; nFileIn.value = '';
     nDrop.classList.remove('has-img');
-    nDropInner.innerHTML = '<span class="add-drop-icon" id="nDropIcon">+</span><span class="add-drop-text">Drop an image here or click to browse</span>';
+    nDropInner.innerHTML = '<span class="add-drop-icon" id="nDropIcon">+</span><span class="add-drop-text">Click, drag & drop, or paste an image here</span>';
     nClear.style.display = 'none';
   }
+  const nDesc = $('#n_desc');
+  const nNotes = $('#n_notes');
+  const nBrand = $('#n_brand');
+  const nName = $('#n_name');
+  function genDescription() {
+    const brand = nBrand.value.trim();
+    const name = nName.value.trim();
+    const notes = nNotes.value.trim();
+    if (!brand || !name || !notes) return;
+    const noteList = notes.split(/[·,|/]\s*/).map(n => n.trim()).filter(Boolean);
+    const a = noteList[0] || '';
+    const b = noteList[1] || '';
+    const c = noteList[2] || '';
+    const d = noteList[3] || '';
+    const lines = [
+      `${brand} presents ${name}, a fragrance defined by the interplay of ${a}${b ? `, ${b}` : ''}${c ? `, and ${c}` : ''}.${d ? ` Hints of ${d} linger in the dry-down.` : ''} A composition of quiet confidence — modern, refined, unmistakable.`,
+      `${name} by ${brand} opens with ${a}${b ? `, unfurling through a heart of ${b}` : ''}${c ? ` before settling into ${c}` : ''}.${d ? ` Subtle traces of ${d} add an unexpected depth.` : ''} This is a scent for those who appreciate the art of understatement.`,
+      `A masterful blend from ${brand}: ${name} weaves together${b ? ` ${a}, ${b}` : ` ${a}`}${c ? `, and ${c}` : ''}${d ? ` with a whisper of ${d}` : ''}. The result is a fragrance that feels both timeless and entirely of the moment.`,
+      `${brand}'s ${name} is an olfactory study in contrast — ${a}${b ? ` meets ${b}` : ''}${c ? `, grounded by ${c}` : ''}${d ? ` with ${d}` : ''}. Elegant, bold, and unforgettable.`,
+    ];
+    const desc = lines[Math.floor(Math.random() * lines.length)];
+    nDesc.value = desc.charAt(0).toUpperCase() + desc.slice(1);
+  }
+  nNotes.addEventListener('blur', () => { if (!nDesc.value.trim()) genDescription(); });
+  nBrand.addEventListener('blur', () => { if (!nDesc.value.trim()) genDescription(); });
   async function handleNewFile(f) {
     if (!f) return;
     if (!/^image\//.test(f.type)) return toast('Not an image file');
@@ -1293,7 +1315,6 @@ async function renderAdmin() {
   async function handleNewUrl(url) {
     if (url) setNewImg(url);
   }
-  $('#nImgBtn').onclick = () => nFileIn.click();
   nDrop.onclick = () => nFileIn.click();
   nClear.onclick = clearNewImg;
   nFileIn.onchange = () => handleNewFile(nFileIn.files[0]);
