@@ -1316,7 +1316,6 @@ async function renderAdmin() {
       if (it.type.startsWith('image/')) { e.preventDefault(); return handleNewFile(it.getAsFile()); }
     }
   });
-  };
 
   $('#addProduct').onclick = async () => {
     const body = {
