@@ -1193,6 +1193,13 @@ async function renderAdmin() {
           <div class="field"><span>Accent colour</span><input id="n_accent" type="color" value="#b8975a" style="height:42px;padding:4px"/></div>
         </div>
         <div class="field"><span>Description</span><input id="n_desc" placeholder="Short description"/></div>
+        <div class="field" id="nImgField"><span>Image</span>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="img-thumb" id="nImgPreview" style="width:60px;height:60px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-size:22px">+</div>
+            <button class="upload" type="button" id="nImgBtn">Choose file</button>
+            <input type="file" id="nImgFile" accept="image/png,image/jpeg,image/webp,image/avif" hidden/>
+          </div>
+        </div>
         <button class="btn-primary" id="addProduct" style="width:auto">Add fragrance</button>
       </div>
 
@@ -1250,6 +1257,21 @@ async function renderAdmin() {
       </div>
     </section>`;
 
+  let _newImgDataUrl = null;
+  const nPreview = $('#nImgPreview');
+  const nFileIn = $('#nImgFile');
+  $('#nImgBtn').onclick = () => nFileIn.click();
+  nPreview.onclick = () => nFileIn.click();
+  nFileIn.onchange = async () => {
+    const f = nFileIn.files[0];
+    if (!f) return;
+    if (!/^image\//.test(f.type)) return toast('Not an image file');
+    if (f.size > 8 * 1024 * 1024) return toast('Image too large (max 8MB)');
+    _newImgDataUrl = await fileToDataUrl(f);
+    nPreview.innerHTML = `<img src="${_newImgDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+    toast('Image ready');
+  };
+
   $('#addProduct').onclick = async () => {
     const body = {
       name: $('#n_name').value.trim(),
@@ -1263,12 +1285,18 @@ async function renderAdmin() {
     if (!body.name || !body.brand || !body.price) return toast('Name, brand and price required');
     try {
       const p = await api('/api/admin/products', { method: 'POST', body });
+      // upload image if one was selected
+      if (_newImgDataUrl) {
+        await api(`/api/admin/products/${p.id}/image`, { method: 'POST', body: { dataUrl: _newImgDataUrl } });
+        p.image = _newImgDataUrl;
+        _newImgDataUrl = null;
+      }
       state.products.push(p);
       const tbody = document.querySelector('.atable tbody');
       const row = document.createElement('tr');
       row.dataset.id = p.id;
       row.innerHTML = `<td>
-        <div class="img-cell"><div class="img-thumb dropzone" tabindex="0" style="background:linear-gradient(160deg,${p.accent},#0c0c0e)"><span class="drop-hint">drop / paste</span></div>
+        <div class="img-cell"><div class="img-thumb dropzone" tabindex="0" style="${p.image ? '' : `background:linear-gradient(160deg,${p.accent},#0c0c0e)`}">${p.image ? `<img class="thumb-img" src="${p.image}" alt=""/>` : ''}<span class="drop-hint">drop / paste</span></div>
         <button class="upload" type="button">Upload</button><input type="file" class="file-in" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden/></div>
       </td>
       <td><input value="${p.brand}" data-f="brand"/></td>
@@ -1281,6 +1309,7 @@ async function renderAdmin() {
       tbody.prepend(row);
       bindRow(row);
       $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = '';
+      nPreview.innerHTML = '+'; nFileIn.value = '';
       toast('Fragrance added');
     } catch (e) { toast(e.message); }
   };
