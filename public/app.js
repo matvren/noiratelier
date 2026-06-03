@@ -1193,11 +1193,12 @@ async function renderAdmin() {
           <div class="field"><span>Accent colour</span><input id="n_accent" type="color" value="#b8975a" style="height:42px;padding:4px"/></div>
         </div>
         <div class="field"><span>Description</span><input id="n_desc" placeholder="Short description"/></div>
-        <div class="field" id="nImgField"><span>Image</span>
+        <div class="field" id="nImgField"><span>Image (optional)</span>
           <div style="display:flex;gap:12px;align-items:center">
-            <div class="img-thumb" id="nImgPreview" style="width:60px;height:60px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-size:22px">+</div>
-            <button class="upload" type="button" id="nImgBtn">Choose file</button>
+            <div class="img-thumb" id="nImgPreview" style="width:60px;height:60px;border-radius:8px;background:var(--bg-soft);border:1px dashed var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:24px;overflow:hidden;flex-shrink:0">+</div>
+            <button type="button" id="nImgBtn" style="background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer">Choose file</button>
             <input type="file" id="nImgFile" accept="image/png,image/jpeg,image/webp,image/avif" hidden/>
+            <button type="button" id="nImgClear" style="background:none;border:none;color:var(--muted-2);font-size:12px;cursor:pointer;display:none">✕</button>
           </div>
         </div>
         <button class="btn-primary" id="addProduct" style="width:auto">Add fragrance</button>
@@ -1260,16 +1261,18 @@ async function renderAdmin() {
   let _newImgDataUrl = null;
   const nPreview = $('#nImgPreview');
   const nFileIn = $('#nImgFile');
+  const nClear = $('#nImgClear');
   $('#nImgBtn').onclick = () => nFileIn.click();
   nPreview.onclick = () => nFileIn.click();
+  nClear.onclick = () => { _newImgDataUrl = null; nPreview.innerHTML = '+'; nFileIn.value = ''; nClear.style.display = 'none'; };
   nFileIn.onchange = async () => {
     const f = nFileIn.files[0];
     if (!f) return;
     if (!/^image\//.test(f.type)) return toast('Not an image file');
     if (f.size > 8 * 1024 * 1024) return toast('Image too large (max 8MB)');
     _newImgDataUrl = await fileToDataUrl(f);
-    nPreview.innerHTML = `<img src="${_newImgDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
-    toast('Image ready');
+    nPreview.innerHTML = `<img src="${_newImgDataUrl}" style="width:100%;height:100%;object-fit:cover"/>`;
+    nClear.style.display = 'inline';
   };
 
   $('#addProduct').onclick = async () => {
