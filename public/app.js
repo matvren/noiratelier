@@ -1261,15 +1261,34 @@ async function renderAdmin() {
       price: Math.round(parseFloat($('#n_price').value || '0') * 100),
     };
     if (!body.name || !body.brand || !body.price) return toast('Name, brand and price required');
-    try { await api('/api/admin/products', { method: 'POST', body }); toast('Fragrance added'); renderAdmin(); }
-    catch (e) { toast(e.message); }
+    try {
+      const p = await api('/api/admin/products', { method: 'POST', body });
+      state.products.push(p);
+      const tbody = document.querySelector('.atable tbody');
+      const row = document.createElement('tr');
+      row.dataset.id = p.id;
+      row.innerHTML = `<td>
+        <div class="img-cell"><div class="img-thumb dropzone" tabindex="0" style="background:linear-gradient(160deg,${p.accent},#0c0c0e)"><span class="drop-hint">drop / paste</span></div>
+        <button class="upload" type="button">Upload</button><input type="file" class="file-in" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden/></div>
+      </td>
+      <td><input value="${p.brand}" data-f="brand"/></td>
+      <td><input value="${p.name}" data-f="name"/></td>
+      <td><input value="${p.notes || ''}" data-f="notes"/></td>
+      <td><input value="${p.size || ''}" data-f="size" style="width:70px"/></td>
+      <td><input class="price-in" type="number" step="0.01" value="${(p.price/100).toFixed(2)}" data-f="price"/></td>
+      <td><input value="${p.stock}" data-f="stock" style="width:60px"/></td>
+      <td style="white-space:nowrap"><button class="save">Save</button> <button class="del">Del</button></td>`;
+      tbody.prepend(row);
+      bindRow(row);
+      $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = '';
+      toast('Fragrance added');
+    } catch (e) { toast(e.message); }
   };
 
-  $$('.atable tbody tr[data-id]').forEach((tr) => {
+  function bindRow(tr) {
     const id = tr.dataset.id;
     tr.querySelector('.save').onclick = async () => {
       const body = {};
-      // only read the editable text/number fields (skip the hidden file input)
       tr.querySelectorAll('input[data-f]').forEach((i) => {
         const f = i.dataset.f;
         if (f === 'price') body.price = Math.round(parseFloat(i.value || '0') * 100);
@@ -1277,35 +1296,32 @@ async function renderAdmin() {
         else body[f] = i.value;
       });
       try {
-        await api('/api/admin/products/' + id, { method: 'PUT', body });
-        state.products = await api('/api/products');
+        const updated = await api('/api/admin/products/' + id, { method: 'PUT', body });
+        state.products = state.products.map(p => p.id == id ? updated : p);
         toast('Saved ✓');
-        renderAdmin(); // redraw so the new values are clearly shown
       } catch (e) { toast(e.message); }
     };
     tr.querySelector('.del').onclick = async () => {
       if (!confirm('Delete this fragrance?')) return;
       await api('/api/admin/products/' + id, { method: 'DELETE' });
-      toast('Deleted'); state.products = await api('/api/products'); renderAdmin();
+      tr.remove();
+      state.products = state.products.filter(p => p.id != id);
+      toast('Deleted');
     };
-
-  // (order action handlers are attached after the product rows loop to avoid multiple bindings)
-
-    // ---- image upload (file picker, drag & drop, copy & paste) ----
+    // image upload handlers (same as below)
     const fileIn = tr.querySelector('.file-in');
     const uploadBtn = tr.querySelector('.upload');
     const thumb = tr.querySelector('.img-thumb');
-
     const busy = (on) => { uploadBtn.textContent = on ? 'Working…' : 'Upload'; thumb.classList.toggle('uploading', on); };
-
-    // refresh the shop data + redraw admin so the saved image shows everywhere
-    async function afterImageSaved(msg) {
-      toast(msg);
-      state.products = await api('/api/products');
-      renderAdmin();
+    async function updateThumb(product) {
+      state.products = state.products.map(p => p.id == product.id ? product : p);
+      thumb.innerHTML = product.image
+        ? `<img class="thumb-img" src="${product.image}" alt=""/>`
+        : `<span class="drop-hint">drop / paste</span>`;
+      if (!product.image) thumb.style.background = `linear-gradient(160deg,${product.accent || '#b8975a'},#0c0c0e)`;
+      busy(false);
+      toast('Image saved ✓');
     }
-
-    // upload a File object (from picker, drag, or paste)
     async function uploadFile(file) {
       if (!file) return;
       if (!/^image\//.test(file.type)) return toast('That is not an image file');
@@ -1313,27 +1329,21 @@ async function renderAdmin() {
       busy(true);
       try {
         const dataUrl = await fileToDataUrl(file);
-        await api(`/api/admin/products/${id}/image`, { method: 'POST', body: { dataUrl } });
-        await afterImageSaved('Image saved ✓');
+        const p = await api(`/api/admin/products/${id}/image`, { method: 'POST', body: { dataUrl } });
+        await updateThumb(p);
       } catch (e) { toast(e.message); busy(false); }
     }
-
-    // import an image by URL or data-URL (dragging/pasting from another website)
     async function uploadUrl(url) {
       if (!url) return;
       busy(true);
       try {
-        await api(`/api/admin/products/${id}/image-url`, { method: 'POST', body: { url } });
-        await afterImageSaved('Image saved ✓');
+        const p = await api(`/api/admin/products/${id}/image-url`, { method: 'POST', body: { url } });
+        await updateThumb(p);
       } catch (e) { toast(e.message); busy(false); }
     }
-
-    // click → file picker
     uploadBtn.onclick = () => fileIn.click();
     thumb.onclick = () => fileIn.click();
     fileIn.onchange = () => uploadFile(fileIn.files[0]);
-
-    // drag & drop
     ['dragenter', 'dragover'].forEach((ev) =>
       thumb.addEventListener(ev, (e) => { e.preventDefault(); thumb.classList.add('drag'); }));
     ['dragleave', 'dragend'].forEach((ev) =>
@@ -1343,7 +1353,6 @@ async function renderAdmin() {
       thumb.classList.remove('drag');
       const dt = e.dataTransfer;
       if (dt.files && dt.files.length) return uploadFile(dt.files[0]);
-      // dragged from another website → usually a URL or HTML snippet
       const url = dt.getData('text/uri-list') || dt.getData('text/plain');
       const html = dt.getData('text/html');
       if (html) {
@@ -1353,8 +1362,6 @@ async function renderAdmin() {
       if (url) return uploadUrl(url);
       toast('Could not read that image — try saving it and uploading the file');
     });
-
-    // paste an image while the thumb is focused (click it first, then Ctrl/Cmd+V)
     thumb.addEventListener('paste', (e) => {
       const items = e.clipboardData?.items || [];
       for (const it of items) {
@@ -1363,7 +1370,8 @@ async function renderAdmin() {
       const text = e.clipboardData?.getData('text');
       if (text && /^https?:\/\//i.test(text)) { e.preventDefault(); return uploadUrl(text); }
     });
-  });
+  }
+  $$('.atable tbody tr[data-id]').forEach(bindRow);
 
   // attach admin order handlers here so they run once per renderAdmin()
   const ordersSection = $('#view');
@@ -1372,9 +1380,9 @@ async function renderAdmin() {
       const id = +b.dataset.markPaid;
       try {
         await api(`/api/admin/orders/${id}/paid`, { method: 'POST' });
+        b.closest('tr').querySelector('td:nth-child(5)').textContent = 'paid';
+        b.replaceWith(`<button class="btn-admin btn-admin-pending" data-mark-pending="${id}">Mark pending</button>`);
         toast('Marked paid');
-        // refresh admin view and badge
-        renderAdmin();
         const cfg = await api('/api/config'); state.pending_orders_count = cfg.pending_orders_count || 0; renderAdminBadge();
       } catch (err) { toast(err.message); }
     });
@@ -1382,8 +1390,9 @@ async function renderAdmin() {
       const id = +b.dataset.markPending;
       try {
         await api(`/api/admin/orders/${id}/pending`, { method: 'POST' });
+        b.closest('tr').querySelector('td:nth-child(5)').textContent = 'pending';
+        b.replaceWith(`<button class="btn-admin btn-admin-paid" data-mark-paid="${id}">Mark paid</button>`);
         toast('Marked pending');
-        renderAdmin();
         const cfg = await api('/api/config'); state.pending_orders_count = cfg.pending_orders_count || 0; renderAdminBadge();
       } catch (err) { toast(err.message); }
     });
@@ -1396,7 +1405,8 @@ async function renderAdmin() {
         onConfirm: async () => {
           try {
             await api(`/api/admin/orders/${id}`, { method: 'DELETE' });
-            toast('Deleted'); renderAdmin();
+            b.closest('tr').remove();
+            toast('Deleted');
             const cfg = await api('/api/config'); state.pending_orders_count = cfg.pending_orders_count || 0; renderAdminBadge();
           } catch (err) { toast(err.message); }
         }
