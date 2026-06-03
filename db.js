@@ -4,19 +4,15 @@ import path from 'path';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, 'noir.db');
+const isVercel = !!process.env.VERCEL;
+const DB_PATH = isVercel ? '/tmp/noir.db' : path.join(__dirname, 'noir.db');
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const GH_OWNER = 'matvren';
 const GH_REPO = 'noiratelier';
 
-// ---- Turso (Vercel-compatible remote SQLite) ----
-const TURSO_URL = process.env.TURSO_DATABASE_URL || '';
-const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN || '';
-const useTurso = !!(TURSO_URL && TURSO_TOKEN);
-
-// ---- GitHub sync helpers (fallback for local file) ----
+// ---- GitHub sync helpers ----
 async function ghDownload() {
-  if (!GITHUB_TOKEN || useTurso) return 0;
+  if (!GITHUB_TOKEN) return 0;
   const res = await fetch(
     `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`,
     { headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
@@ -32,7 +28,7 @@ async function ghDownload() {
 
 let ghSha = null;
 export async function ghUpload() {
-  if (!GITHUB_TOKEN || useTurso) return;
+  if (!GITHUB_TOKEN) return;
   try {
     const content = fs.readFileSync(DB_PATH).toString('base64');
     const getRes = await fetch(
@@ -53,16 +49,14 @@ export async function ghUpload() {
   } catch (e) { console.error('× GitHub sync:', e.message); }
 }
 
-// Restore DB from GitHub on startup (only for local file mode)
-if (!useTurso) {
-  const ghResult = await ghDownload();
-  if (ghResult === 2) console.log('✓ Restored noir.db from GitHub');
-  else if (ghResult === 1) console.log('• Starting fresh - no noir.db on GitHub yet');
-  else if (ghResult === -1) console.warn('• GitHub download failed');
-  else console.log('• No GITHUB_TOKEN set, using local file');
-}
+// Restore DB from GitHub on startup
+const ghResult = await ghDownload();
+if (ghResult === 2) console.log('✓ Restored noir.db from GitHub');
+else if (ghResult === 1) console.log('• Starting fresh - no noir.db on GitHub yet');
+else if (ghResult === -1) console.warn('• GitHub download failed');
+else console.log('• No GITHUB_TOKEN set, using local file');
 
-const db = createClient({ url: useTurso ? TURSO_URL : `file:${DB_PATH}`, authToken: useTurso ? TURSO_TOKEN : undefined });
+const db = createClient({ url: `file:${DB_PATH}` });
 
 await db.execute(`CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE NOT NULL,
