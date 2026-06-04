@@ -530,6 +530,7 @@ function renderShop() {
 
   $('#view').innerHTML = `
     <section class="hero" id="hero">
+      <div class="hero-mist" id="heroMist"></div>
       <div class="eyebrow">Designer & Niche · Curated</div>
       <h1>The art of <em>scent</em>,<br/>refined to its essence.</h1>
       <p>A quiet edit of the world's compelling fragrances — authenticated, beautifully kept, and shipped with care.</p>
@@ -599,6 +600,18 @@ function renderShop() {
     }
     hero.appendChild(c);
   }
+  // hero mist clouds
+  (function() {
+    const mc = $('#heroMist');
+    if (!mc) return;
+    for (let i = 0; i < 8; i++) {
+      const m = document.createElement('div');
+      m.className = 'mist-cloud';
+      const sz = 100 + Math.random() * 300;
+      m.style.cssText = `left:${Math.random()*100}%;top:${20+Math.random()*60}%;width:${sz}px;height:${sz}px;animation-duration:${12+Math.random()*18}s;animation-delay:${Math.random()*12}s`;
+      mc.appendChild(m);
+    }
+  })();
   // hero search wiring
   const hInp = $('#heroSearchInput'); if (hInp) {
     hInp.oninput = (e) => { searchTempQuery = e.target.value; state.query = searchTempQuery.trim(); updateSearchLabel(); renderGrid(); };
