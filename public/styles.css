@@ -724,6 +724,5 @@ input:-webkit-autofill:hover{
 .pay-step-hidden{display:none}
 
 /* hero mist clouds */
-.hero-mist{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
-.mist-cloud{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(184,151,90,.06),transparent 70%);animation:mist-float linear infinite}
-@keyframes mist-float{0%{transform:translateY(0) translateX(0) scale(1);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-120px) translateX(40px) scale(1.3);opacity:0}}
+.mist-cloud{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(184,151,90,.07),transparent 70%);pointer-events:none;animation:mist-float linear infinite}
+@keyframes mist-float{0%{transform:translateY(0) translateX(0) scale(1);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-80px) translateX(30px) scale(1.2);opacity:0}}
