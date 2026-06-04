@@ -119,6 +119,11 @@ async function init() {
     state.products = [];
   }
 
+  // clean stale guest cart items (product no longer exists)
+  const validIds = new Set(state.products.map(p => p.id));
+  state.guestCart = state.guestCart.filter(g => validIds.has(g.id));
+  saveGuest();
+
   if (state.user) {
     try { await refreshCart(); } catch (err) { console.warn('Could not refresh cart:', err); state.cart = []; }
   }
