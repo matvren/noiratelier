@@ -1194,7 +1194,7 @@ async function renderAdmin() {
         </div>
         <div class="form-row-2">
           <div class="field"><span>Price (€)</span><input id="n_price" type="number" step="0.01" placeholder="135.00"/></div>
-          <div class="field"><span>Description <span style="font-weight:400;text-transform:none;color:var(--muted-2)">auto-generated from notes</span></span><input id="n_desc" placeholder="A short line about the fragrance…"/></div>
+          <div class="field"><span>Description <span style="font-weight:400;text-transform:none;color:var(--muted-2)">auto-generated from notes</span><button type="button" id="nRegen" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:11px;margin-left:6px;text-decoration:underline">↻ regenerate</button></span><input id="n_desc" placeholder="The description is auto-generated from brand + name + notes"/></div>
         </div>
         <div class="field"><span>Image <span style="font-weight:400;text-transform:none;color:var(--muted-2)">(optional)</span></span>
           <div class="add-drop" id="nDrop">
@@ -1285,27 +1285,36 @@ async function renderAdmin() {
   const nNotes = $('#n_notes');
   const nBrand = $('#n_brand');
   const nName = $('#n_name');
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function genDescription() {
     const brand = nBrand.value.trim();
     const name = nName.value.trim();
     const notes = nNotes.value.trim();
     if (!brand || !name || !notes) return;
     const noteList = notes.split(/[·,|/]\s*/).map(n => n.trim()).filter(Boolean);
-    const a = noteList[0] || '';
-    const b = noteList[1] || '';
-    const c = noteList[2] || '';
-    const d = noteList[3] || '';
-    const lines = [
-      `${brand} presents ${name}, a fragrance defined by the interplay of ${a}${b ? `, ${b}` : ''}${c ? `, and ${c}` : ''}.${d ? ` Hints of ${d} linger in the dry-down.` : ''} A composition of quiet confidence — modern, refined, unmistakable.`,
-      `${name} by ${brand} opens with ${a}${b ? `, unfurling through a heart of ${b}` : ''}${c ? ` before settling into ${c}` : ''}.${d ? ` Subtle traces of ${d} add an unexpected depth.` : ''} This is a scent for those who appreciate the art of understatement.`,
-      `A masterful blend from ${brand}: ${name} weaves together${b ? ` ${a}, ${b}` : ` ${a}`}${c ? `, and ${c}` : ''}${d ? ` with a whisper of ${d}` : ''}. The result is a fragrance that feels both timeless and entirely of the moment.`,
-      `${brand}'s ${name} is an olfactory study in contrast — ${a}${b ? ` meets ${b}` : ''}${c ? `, grounded by ${c}` : ''}${d ? ` with ${d}` : ''}. Elegant, bold, and unforgettable.`,
+    const a = noteList[0] || ''; const b = noteList[1] || '';
+    const c = noteList[2] || ''; const d = noteList[3] || '';
+    const intro = pick([
+      `${brand} presents ${name}`,
+      `${name} by ${brand}`,
+      `${brand}'s ${name}`,
+      `${brand} introduces ${name}`,
+      `With ${name}, ${brand}`,
+    ]);
+    const structures = [
+      `${intro} — a fragrance shaped by ${a}${b ? `, ${b}` : ''}${c ? `, and ${c}` : ''}.${d ? ` Traces of ${d} linger beneath.` : ''} ${pick(['Bold yet refined.', 'Effortlessly elegant.', 'Modern, distinctive, unforgettable.', 'A quiet statement of taste.', 'Undeniably captivating.'])}`,
+      `${intro} opens with ${a}${b ? `, unfurls through ${b}` : ''}${c ? `, and settles into ${c}` : ''}.${d ? ` A whisper of ${d} rounds out the composition.` : ''} ${pick(['The result is a fragrance of remarkable depth.', 'A scent that lingers long after you leave.', 'Sophisticated, warm, and impossibly alluring.', 'Made for those who notice what others miss.'])}`,
+      `There is something unmistakable about ${name}. ${cap(a)}${b ? `, ${b} — they` : ''}${b ? '' : ' — it'}${c ? `, and ${c} — they` : ''} come together in a way that feels both deliberate and effortless.${d ? ` A touch of ${d} ties it all together.` : ''} ${pick(['This is ${brand} at its finest.', 'A fragrance that stays with you.', 'Wear it and be remembered.', 'Understated power, bottled.'])}`,
+      `${pick(['A masterful blend from', 'An exquisite composition by', 'A captivating creation from'])} ${brand}. ${cap(name)} weaves${b ? ` ${a} with ${b}` : ` ${a}`}${c ? `, grounded by ${c}` : ''}${d ? `, with ${d} in the shadows` : ''} — ${pick(['a study in balance and contrast.', 'an exercise in restrained luxury.', 'a fragrance that demands nothing and gives everything.', 'a modern classic in the making.'])}`,
+      `${cap(a)}${b ? `, ${b}` : ''}${c ? `, ${c}` : ''}${d ? `, ${d}` : ''} — these are the notes that define ${name}. ${brand} ${pick(['orchestrates them', 'weaves them', 'layers them', 'balances them'])} with ${pick(['remarkable precision', 'understated mastery', 'unmistakable artistry', 'effortless sophistication'])}, creating a scent that ${pick(['feels both timeless and new', 'commands attention without asking for it', 'stays with you, lingering on the skin', 'reveals something new with every wear'])}.`,
     ];
-    const desc = lines[Math.floor(Math.random() * lines.length)];
-    nDesc.value = desc.charAt(0).toUpperCase() + desc.slice(1);
+    nDesc.value = structures.reduce((acc, s) => acc.replace(/\$\{(\w+)\}/g, (_, k) => ({ brand, name, a, b, c, d }[k] || '')), pick(structures));
+    nDesc.value = cap(nDesc.value);
   }
   nNotes.addEventListener('blur', () => { if (!nDesc.value.trim()) genDescription(); });
   nBrand.addEventListener('blur', () => { if (!nDesc.value.trim()) genDescription(); });
+  $('#nRegen').onclick = genDescription;
   async function handleNewFile(f) {
     if (!f) return;
     if (!/^image\//.test(f.type)) return toast('Not an image file');
