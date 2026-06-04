@@ -363,6 +363,11 @@ app.delete('/api/cart/:id', requireAuth, asyncHandler(async (req, res) => {
   res.json(await getCart(req.user.id));
 }));
 
+app.delete('/api/cart', requireAuth, asyncHandler(async (req, res) => {
+  await db.execute({ sql: 'DELETE FROM cart_items WHERE user_id = ?', args: [req.user.id] });
+  res.json([]);
+}));
+
 // ---------- orders ----------
 app.post('/api/order/create', requireAuth, asyncHandler(async (req, res) => {
   const cart = await getCart(req.user.id);

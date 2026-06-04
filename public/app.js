@@ -764,7 +764,7 @@ async function setQty(id, qty) {
   renderCart();
 }
 
-async function removeItem(id) { await setQty(id, 0); }
+async function removeItem(id) { try { await setQty(id, 0); } catch (e) { toast('Could not remove: ' + e.message); } }
 
 function renderCart() {
   const cart = activeCart();
@@ -796,12 +796,20 @@ function renderCart() {
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   foot.innerHTML = `
     <div class="cart-total"><span>Subtotal</span><b>${euro(total)}</b></div>
-    <button class="btn-primary" id="checkoutBtn">Checkout</button>`;
+    <button class="btn-primary" id="checkoutBtn">Checkout</button>
+    ${state.user ? '<button class="btn-sm" id="clearCartBtn" style="background:none;border:1px solid var(--line);color:var(--muted);padding:8px 16px;border-radius:30px;font-size:12px;margin-top:8px;width:100%">Clear cart</button>' : ''}`;
 
   $$('[data-inc]').forEach((b) => b.onclick = () => setQty(+b.dataset.inc, cart.find(c => c.id == b.dataset.inc).qty + 1));
   $$('[data-dec]').forEach((b) => b.onclick = () => setQty(+b.dataset.dec, cart.find(c => c.id == b.dataset.dec).qty - 1));
   $$('[data-rm]').forEach((b) => b.onclick = () => removeItem(+b.dataset.rm));
   $('#checkoutBtn').onclick = () => { closeCart(); location.hash = '#checkout'; };
+  const clearBtn = $('#clearCartBtn');
+  if (clearBtn) clearBtn.onclick = async () => {
+    try {
+      state.cart = await api('/api/cart', { method: 'DELETE' });
+      renderCart(); updateCartCount(); toast('Cart cleared');
+    } catch (e) { toast(e.message); }
+  };
 }
 
 
