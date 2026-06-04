@@ -11,6 +11,8 @@ const GH_OWNER = 'matvren';
 const GH_REPO = 'noiratelier';
 const GH_BRANCH = 'db-backup';
 
+let ghSha = null;
+
 async function ghDownload() {
   if (!GITHUB_TOKEN) return 0;
   const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db?ref=${GH_BRANCH}`;
@@ -30,6 +32,31 @@ async function ghDownload() {
   return -1;
 }
 
+export async function ghUpload() {
+  if (!GITHUB_TOKEN) return { ok: false, error: 'No GITHUB_TOKEN set' };
+  try {
+    const content = fs.readFileSync(DB_PATH).toString('base64');
+    const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`;
+    const getRes = await fetch(url + `?ref=${GH_BRANCH}`, {
+      headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' }
+    });
+    if (getRes.ok) ghSha = (await getRes.json()).sha;
+    const putRes = await fetch(url, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'save noir.db', content, sha: ghSha, branch: GH_BRANCH }),
+    });
+    if (putRes.ok) {
+      ghSha = (await putRes.json()).content.sha;
+      return { ok: true };
+    }
+    const t = await putRes.text();
+    return { ok: false, error: `GitHub ${putRes.status}: ${t.slice(0, 200)}` };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 const ghResult = await ghDownload();
 if (ghResult === 2) console.log('✓ Restored noir.db from GitHub');
 else if (ghResult === 1) console.log('• Starting fresh');
@@ -37,9 +64,9 @@ else if (ghResult === -1) console.warn('• GitHub download failed');
 
 const db = createClient({ url: `file:${DB_PATH}` });
 
-// Use DELETE journal mode so the main file is always up to date
+// DELETE journal mode so the main file is always up to date (no WAL)
 await db.execute('PRAGMA journal_mode=DELETE');
-await db.execute('PRAGMA synchronous=FULL');
+await db.execute('PRAGMA synchronous=NORMAL');
 
 await db.execute(`CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE NOT NULL,
@@ -77,48 +104,4 @@ if (!ocols.includes('customer_confirmed')) {
   try { await db.execute('ALTER TABLE orders ADD COLUMN customer_confirmed INTEGER DEFAULT 0'); } catch (e) { /* ignore */ }
 }
 
-// ---- GitHub sync (DELETE journal = main file is always current) ----
-let ghSha = null;
-
-async function ghUpload() {
-  if (!GITHUB_TOKEN) return;
-  try {
-    const content = fs.readFileSync(DB_PATH).toString('base64');
-    const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`;
-    const getRes = await fetch(url + `?ref=${GH_BRANCH}`, {
-      headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' }
-    });
-    if (getRes.ok) ghSha = (await getRes.json()).sha;
-    const putRes = await fetch(url, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'sync noir.db', content, sha: ghSha, branch: GH_BRANCH }),
-    });
-    if (putRes.ok) { ghSha = (await putRes.json()).content.sha; }
-    else { const t = await putRes.text(); console.error('× GitHub sync err:', putRes.status, t.slice(0, 200)); }
-  } catch (e) { console.error('× GitHub sync:', e.message); }
-}
-
-// debounce: only upload after 500ms of inactivity
-let ghTimer = null;
-function scheduleUpload() {
-  clearTimeout(ghTimer);
-  ghTimer = setTimeout(ghUpload, 500);
-}
-
-// Auto-sync after writes
-let ready = false;
-const _exec = db.execute.bind(db);
-db.execute = async function (input) {
-  const result = await _exec(input);
-  if (ready) {
-    const sql = typeof input === 'string' ? input : input.sql;
-    if (/^\s*(INSERT|UPDATE|DELETE)\b/i.test(sql.trim())) {
-      scheduleUpload();
-    }
-  }
-  return result;
-};
-
-export function setReady() { ready = true; }
 export default db;

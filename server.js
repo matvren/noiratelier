@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import db, { setReady } from './db.js';
+import db, { ghUpload } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -117,7 +117,6 @@ async function autoSeed() {
   console.log(`  Owner login: ${ownerEmail} / ${adminPass}  (set ADMIN_PASSWORD env var to customise)`);
 }
 await autoSeed();
-setReady();
 
 // setup mail helper
 let mailer = null;
@@ -311,6 +310,13 @@ app.post('/api/admin/products/:id/image-url', requireOwner, asyncHandler(async (
   await db.execute({ sql: 'UPDATE products SET image = ? WHERE id = ?', args: [url, id] });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
   res.json(row);
+}));
+
+// owner: manually save the database to GitHub
+app.post('/api/admin/save', requireOwner, asyncHandler(async (_req, res) => {
+  const result = await ghUpload();
+  if (result.ok) res.json({ ok: true });
+  else res.status(500).json({ error: result.error });
 }));
 
 // ---------- cart ----------

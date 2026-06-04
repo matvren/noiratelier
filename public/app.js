@@ -1181,6 +1181,13 @@ async function renderAdmin() {
     <section class="section">
       <div class="section-head"><h2>Atelier Admin</h2><span class="count">${products.length} products · ${orders.length} orders · ${euro(revenue)} revenue</span></div>
       <div class="notice">You are signed in as the owner. Edit any price or detail below and hit <b>Save</b>. Changes go live instantly.</div>
+      <div style="background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div style="color:var(--gold);font-weight:600;font-size:14px;margin-bottom:4px">💾 Save to GitHub</div>
+          <div style="color:var(--muted);font-size:12px;line-height:1.5">Saves the current collection (products, images, descriptions) to GitHub so it survives Vercel cold starts. Click this once you're done editing.</div>
+        </div>
+        <button id="saveGithub" style="background:var(--gold);color:#000;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap">Save to GitHub</button>
+      </div>
 
       <div class="card-panel">
         <h3>Add a new fragrance</h3>
@@ -1364,6 +1371,23 @@ async function renderAdmin() {
       if (it.type.startsWith('image/')) { e.preventDefault(); return handleNewFile(it.getAsFile()); }
     }
   });
+
+  $('#saveGithub').onclick = async () => {
+    const btn = $('#saveGithub');
+    const old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    try {
+      const r = await api('/api/admin/save', { method: 'POST' });
+      btn.textContent = '✓ Saved to GitHub';
+      toast('Saved to GitHub — data is now safe across cold starts');
+      setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 3000);
+    } catch (e) {
+      btn.textContent = '× Save failed';
+      toast(e.message);
+      setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 3000);
+    }
+  };
 
   $('#addProduct').onclick = async () => {
     const body = {
