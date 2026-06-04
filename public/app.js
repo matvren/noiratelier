@@ -237,6 +237,7 @@ function updateCartCount() {
 // ---------- routing ----------
 function route() {
   const v = location.hash.replace('#', '') || 'shop';
+  try { if (window.va) va('view', { url: '/' + v }); } catch (e) { /* analytics optional */ }
   if (v === 'admin') renderAdmin();
   else if (v === 'about') renderAbout();
   else if (v === 'wishlist') renderWishlist();
