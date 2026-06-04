@@ -5,8 +5,8 @@ import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isVercel = !!process.env.VERCEL;
-const DB_PATH = isVercel ? '/tmp/noir.db' : path.join(__dirname, 'noir.db');
-const SNAP_PATH = isVercel ? '/tmp/noir_snap.db' : path.join(__dirname, 'noir_snap.db');
+const DB_PATH = isVercel ? '/tmp/noir.db' : path.join(__dirname, 'noir.db').replace(/\\/g, '/');
+const SNAP_PATH = isVercel ? '/tmp/noir_snap.db' : path.join(__dirname, 'noir_snap.db').replace(/\\/g, '/');
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const GH_OWNER = 'matvren';
 const GH_REPO = 'noiratelier';
