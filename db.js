@@ -30,6 +30,8 @@ let ghSha = null;
 async function ghUpload() {
   if (!GITHUB_TOKEN) return;
   try {
+    // flush WAL to main file before reading (use original execute to avoid recursion)
+    await _exec("PRAGMA wal_checkpoint(TRUNCATE)");
     const content = fs.readFileSync(DB_PATH).toString('base64');
     const getUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db?ref=${GH_BRANCH}`;
     const getRes = await fetch(getUrl, {
