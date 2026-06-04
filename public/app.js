@@ -1221,25 +1221,7 @@ async function renderAdmin() {
         <div style="overflow-x:auto">
         <table class="atable">
           <thead><tr><th>Image</th><th>Brand</th><th>Name</th><th>Notes</th><th>Size</th><th>Price (€)</th><th>Stock</th><th></th></tr></thead>
-          <tbody>
-          ${products.map((p) => `
-            <tr data-id="${p.id}">
-              <td>
-                <div class="img-cell">
-                  <div class="img-thumb dropzone" tabindex="0" title="Click to upload, or drag/paste an image here" style="${p.image ? '' : `background:linear-gradient(160deg,${p.accent},#0c0c0e)`}">${p.image ? `<img class="thumb-img" src="${p.image}${p.image.startsWith('data:') ? '' : '?t=' + Date.now()}" alt=""/>` : ''}<span class="drop-hint">drop / paste</span></div>
-                  <button class="upload" type="button">Upload</button>
-                  <input type="file" class="file-in" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden/>
-                </div>
-              </td>
-              <td><input value="${p.brand}" data-f="brand"/></td>
-              <td><input value="${p.name}" data-f="name"/></td>
-              <td><input value="${p.notes || ''}" data-f="notes"/></td>
-              <td><input value="${p.size || ''}" data-f="size" style="width:70px"/></td>
-              <td><input class="price-in" type="number" step="0.01" value="${(p.price/100).toFixed(2)}" data-f="price"/></td>
-              <td><input value="${p.stock}" data-f="stock" style="width:60px"/></td>
-              <td style="white-space:nowrap"><button class="save">Save</button> <button class="del">Del</button></td>
-            </tr>`).join('')}
-          </tbody>
+          <tbody></tbody>
         </table>
         </div>
       </div>
@@ -1269,6 +1251,30 @@ async function renderAdmin() {
         </div>
       </div>
     </section>`;
+
+  function renderAdminTable(rows) {
+    const tbody = document.querySelector('.atable tbody');
+    if (!tbody) return;
+    tbody.innerHTML = rows.map((p) => `
+      <tr data-id="${p.id}">
+        <td>
+          <div class="img-cell">
+            <div class="img-thumb dropzone" tabindex="0" title="Click to upload, or drag/paste an image here" style="${p.image ? '' : `background:linear-gradient(160deg,${p.accent},#0c0c0e)`}">${p.image ? `<img class="thumb-img" src="${p.image}${p.image.startsWith('data:') ? '' : '?t=' + Date.now()}" alt=""/>` : ''}<span class="drop-hint">drop / paste</span></div>
+            <button class="upload" type="button">Upload</button>
+            <input type="file" class="file-in" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden/>
+          </div>
+        </td>
+        <td><input value="${p.brand}" data-f="brand"/></td>
+        <td><input value="${p.name}" data-f="name"/></td>
+        <td><input value="${p.notes || ''}" data-f="notes"/></td>
+        <td><input value="${p.size || ''}" data-f="size" style="width:70px"/></td>
+        <td><input class="price-in" type="number" step="0.01" value="${(p.price/100).toFixed(2)}" data-f="price"/></td>
+        <td><input value="${p.stock}" data-f="stock" style="width:60px"/></td>
+        <td style="white-space:nowrap"><button class="save">Save</button> <button class="del">Del</button></td>
+      </tr>`).join('');
+    $$('.atable tbody tr[data-id]').forEach(bindRow);
+  }
+  renderAdminTable(products);
 
   let _newImgDataUrl = null;
   const nFileIn = $('#nImgFile');
@@ -1402,29 +1408,14 @@ async function renderAdmin() {
     if (!body.name || !body.brand || !body.price) return toast('Name, brand and price required');
     try {
       const p = await api('/api/admin/products', { method: 'POST', body });
-      // upload image if one was selected
       if (_newImgDataUrl) {
         await api(`/api/admin/products/${p.id}/image`, { method: 'POST', body: { dataUrl: _newImgDataUrl } });
-        p.image = _newImgDataUrl;
         _newImgDataUrl = null;
       }
-      state.products.push(p);
-      const tbody = document.querySelector('.atable tbody');
-      const row = document.createElement('tr');
-      row.dataset.id = p.id;
-      row.innerHTML = `<td>
-        <div class="img-cell"><div class="img-thumb dropzone" tabindex="0" style="${p.image ? '' : `background:linear-gradient(160deg,${p.accent},#0c0c0e)`}">${p.image ? `<img class="thumb-img" src="${p.image}" alt=""/>` : ''}<span class="drop-hint">drop / paste</span></div>
-        <button class="upload" type="button">Upload</button><input type="file" class="file-in" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden/></div>
-      </td>
-      <td><input value="${p.brand}" data-f="brand"/></td>
-      <td><input value="${p.name}" data-f="name"/></td>
-      <td><input value="${p.notes || ''}" data-f="notes"/></td>
-      <td><input value="${p.size || ''}" data-f="size" style="width:70px"/></td>
-      <td><input class="price-in" type="number" step="0.01" value="${(p.price/100).toFixed(2)}" data-f="price"/></td>
-      <td><input value="${p.stock}" data-f="stock" style="width:60px"/></td>
-      <td style="white-space:nowrap"><button class="save">Save</button> <button class="del">Del</button></td>`;
-      tbody.prepend(row);
-      bindRow(row);
+      // re-fetch and re-render the table so it's always in sync with server
+      const fresh = await api('/api/admin/products');
+      state.products = fresh;
+      renderAdminTable(fresh);
       $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = '';
       clearNewImg();
       toast('Fragrance added');
@@ -1517,7 +1508,6 @@ async function renderAdmin() {
       if (text && /^https?:\/\//i.test(text)) { e.preventDefault(); return uploadUrl(text); }
     });
   }
-  $$('.atable tbody tr[data-id]').forEach(bindRow);
 
   // attach admin order handlers here so they run once per renderAdmin()
   const ordersSection = $('#view');
