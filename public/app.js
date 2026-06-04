@@ -739,22 +739,6 @@ function renderShop() {
   renderGrid();
   const hero = $('#hero'); if (hero) hero.classList.add('show');
 }
-    for (let i = 0; i < 12; i++) {
-      const p = document.createElement('div');
-      p.className = 'hero-particle';
-      const sz = 4 + Math.random() * 7;
-      p.style.cssText = `left:${3+Math.random()*94}%;width:${sz}px;height:${sz}px;--pdur:${10+Math.random()*10}s;--pdelay:${Math.random()*20}s;--pdx1:${(Math.random()-0.5)*30}px;--pdx2:${(Math.random()-0.5)*30}px;--pdx3:${(Math.random()-0.5)*30}px;--pdx4:${(Math.random()-0.5)*30}px;--pdx5:${(Math.random()-0.5)*30}px`;
-      c.appendChild(p);
-    }
-    hero.appendChild(c);
-  }
-  // hero search wiring
-  const hInp = $('#heroSearchInput'); if (hInp) {
-    hInp.oninput = (e) => { searchTempQuery = e.target.value; state.query = searchTempQuery.trim(); updateSearchLabel(); renderGrid(); };
-    hInp.onkeydown = (e) => { if (e.key === 'Enter') { state.query = searchTempQuery.trim(); updateSearchLabel(); renderShop(); } };
-  }
-  const hBtn = $('#heroSearchBtn'); if (hBtn) hBtn.onclick = () => { state.query = (searchTempQuery || '').trim(); updateSearchLabel(); renderShop(); };
-}
 
 // ---------- quick view modal ----------
 function openQuickView(id) {
