@@ -116,5 +116,9 @@ for (const col of ['shipping_name','shipping_address','shipping_city','shipping_
 if (!ocols.includes('customer_confirmed')) {
   try { await db.execute('ALTER TABLE orders ADD COLUMN customer_confirmed INTEGER DEFAULT 0'); } catch (e) { /* ignore */ }
 }
+await db.execute(`CREATE TABLE IF NOT EXISTS newsletter (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
 
 export default db;

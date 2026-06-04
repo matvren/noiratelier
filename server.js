@@ -166,6 +166,18 @@ async function sendOrderEmail(orderId, status, orderData) {
 }
 
 // ---------- public config ----------
+app.post('/api/newsletter', asyncHandler(async (req, res) => {
+  const { email } = req.body || {};
+  if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required.' });
+  try {
+    await db.execute({ sql: 'INSERT INTO newsletter (email) VALUES (?)', args: [email.toLowerCase().trim()] });
+    res.json({ ok: true });
+  } catch (e) {
+    if (e.message && e.message.includes('UNIQUE')) return res.json({ error: 'You are already subscribed!' });
+    res.status(500).json({ error: e.message });
+  }
+}));
+
 app.get('/api/config', asyncHandler(async (req, res) => {
   const base = { user: req.user ? { name: req.user.name, email: req.user.email, is_owner: req.user.is_owner } : null };
   try {

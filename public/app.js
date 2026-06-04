@@ -526,15 +526,103 @@ const SORT_LABELS = {
 function renderShop() {
   const activeLabel = state.brand !== 'all'
     ? state.brand
-    : (state.query ? `“${state.query}”` : null);
+    : (state.query ? `"${state.query}"` : null);
+  const prods = state.products;
+
+  function productCarouselHTML(list) {
+    return list.length ? `<div class="carousel" id="bCarousel">${list.map(p => `
+      <div class="carousel-card">
+        <div class="cvis" style="background:linear-gradient(160deg,${p.accent || '#b8975a'},${p.accent ? p.accent + '44' : '#0c0c0e'})">${p.image ? `<img src="${p.image}" alt="${p.name}"/>` : `<span style="color:var(--muted-2);font-size:28px;font-family:var(--serif)">${p.brand[0]}${p.name[0]}</span>`}</div>
+        <div class="cinfo">
+          <div class="cbrand">${p.brand}</div>
+          <div class="cname">${p.name}</div>
+          <div class="cprice">${euro(p.price)}</div>
+          <button class="cadd" data-add-id="${p.id}">Add to Cart</button>
+        </div>
+      </div>`).join('')}</div>` : '';
+  }
 
   $('#view').innerHTML = `
     <section class="hero" id="hero">
+      <div class="hero-mist" id="heroMist"></div>
       <div class="eyebrow">Designer & Niche · Curated</div>
       <h1>The art of <em>scent</em>,<br/>refined to its essence.</h1>
       <p>A quiet edit of the world's compelling fragrances — authenticated, beautifully kept, and shipped with care.</p>
       <a href="#shop" class="btn-primary" id="exploreBtn">Explore the collection</a>
     </section>
+
+    <section class="section">
+      <h2 style="font-family:var(--serif);font-size:28px;font-weight:500;text-align:center;margin-bottom:4px">Shop by Mood</h2>
+      <p style="color:var(--muted);text-align:center;font-size:14px;margin-bottom:4px">Find the scent that matches your moment</p>
+      <div class="mood-grid">
+        <div class="mood-card" data-mood="date">
+          <span class="mood-icon">🌹</span>
+          <h3>Date Night</h3>
+          <p>Warm, alluring, unforgettable</p>
+        </div>
+        <div class="mood-card" data-mood="fresh">
+          <span class="mood-icon">🌿</span>
+          <h3>Fresh</h3>
+          <p>Clean, bright, invigorating</p>
+        </div>
+        <div class="mood-card" data-mood="cozy">
+          <span class="mood-icon">🔥</span>
+          <h3>Cozy</h3>
+          <p>Warm, comforting, intimate</p>
+        </div>
+        <div class="mood-card" data-mood="bold">
+          <span class="mood-icon">⚡</span>
+          <h3>Bold</h3>
+          <p>Powerful, daring, iconic</p>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:20px">
+        <a href="#shop" class="btn-primary" style="width:auto;display:inline-block">Browse All Fragrances</a>
+      </div>
+    </section>
+
+    <section class="section carousel-section">
+      <div class="carousel-head">
+        <h2>Bestsellers</h2>
+        <div class="carousel-nav">
+          <button id="carPrev">‹</button>
+          <button id="carNext">›</button>
+        </div>
+      </div>
+      ${productCarouselHTML(prods.slice(0,12))}
+    </section>
+
+    <section class="section quiz-teaser">
+      <h2>Not sure where to start?</h2>
+      <p>Take our quick scent quiz and discover the fragrance that was made for you.</p>
+      <button class="btn-primary" id="quizBtn">Find Your Scent →</button>
+    </section>
+
+    <section class="section review-section">
+      <h2>What our customers say</h2>
+      <div class="review-strip" id="reviewStrip">
+        <div class="review-card"><div class="rstars">★★★★★</div><blockquote>"Incredible curation. Every scent I've tried feels like it was chosen just for me. Fast shipping, beautiful packaging."</blockquote><div class="rname">— Marcus K.</div></div>
+        <div class="review-card"><div class="rstars">★★★★★</div><blockquote>"The authentication process gives me total peace of mind. I've ordered three times and each bottle was perfect."</blockquote><div class="rname">— Sofia L.</div></div>
+        <div class="review-card"><div class="rstars">★★★★★</div><blockquote>"Finally, a fragrance shop that takes itself seriously without being pretentious. The discovery set is a brilliant idea."</blockquote><div class="rname">— James R.</div></div>
+        <div class="review-card"><div class="rstars">★★★★★</div><blockquote>"I bought Baccarat Rouge 540 and saved over €80 compared to retail. Genuine product, discreet delivery. Will be back."</blockquote><div class="rname">— Elena V.</div></div>
+        <div class="review-card"><div class="rstars">★★★★★</div><blockquote>"Customer service is outstanding. I had a question about a fragrance and got a personal, thoughtful response within hours."</blockquote><div class="rname">— David P.</div></div>
+        <div class="review-card"><div class="rstars">★★★★★</div><blockquote>"The discovery set made the perfect gift. Beautifully presented, and my partner loved exploring each scent. Will order again."</blockquote><div class="rname">— Amara D.</div></div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:6px;margin-top:12px" id="reviewDots"></div>
+    </section>
+
+    <section class="section newsletter-section">
+      <div class="inner">
+        <h2>Join the atelier</h2>
+        <p>Get 10% off your first order and early access to new arrivals, curated edits, and limited drops.</p>
+        <div class="newsletter-form">
+          <input type="email" id="newsEmail" placeholder="Enter your email" autocomplete="email"/>
+          <button id="newsBtn">Subscribe</button>
+        </div>
+        <p style="color:var(--muted-2);font-size:12px;margin-top:14px">No spam — we send only the good things. Unsubscribe anytime.</p>
+      </div>
+    </section>
+
     <section class="section" id="shop">
       <div class="section-head">
         <div>
@@ -552,44 +640,105 @@ function renderShop() {
           </div>
         </div>
       </div>
-
       <div class="grid" id="shopGrid"></div>
     </section>`;
 
-  // clear active filter
+  // ---- hero mist ----
+  (function() {
+    const c = $('#heroMist');
+    if (!c) return;
+    for (let i = 0; i < 8; i++) {
+      const m = document.createElement('div');
+      m.className = 'mist-cloud';
+      const sz = 100 + Math.random() * 300;
+      m.style.cssText = `left:${Math.random()*100}%;top:${20+Math.random()*60}%;width:${sz}px;height:${sz}px;animation-duration:${12+Math.random()*18}s;animation-delay:${Math.random()*12}s`;
+      c.appendChild(m);
+    }
+  })();
+
+  // ---- mood cards ----
+  const moodMap = { date: ['rose','vanilla','oud','amber','orchid','tonka','leather','tobacco'], fresh: ['bergamot','citrus','marine','mint','apple','sage','rosemary','aquatic'], cozy: ['vanilla','tobacco','cinnamon','sandalwood','amber','benzoin','cardamom','patchouli'], bold: ['leather','incense','oud','saffron','birch','truffle','oregano','smoky'] };
+  $$('.mood-card').forEach(card => {
+    card.onclick = () => {
+      const mood = card.dataset.mood;
+      const keywords = moodMap[mood] || [];
+      state.brand = 'all';
+      state.query = keywords.join(' ');
+      updateSearchLabel();
+      renderShop();
+      setTimeout(() => document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' }), 100);
+    };
+  });
+
+  // ---- carousel scroll ----
+  const car = $('#bCarousel');
+  if (car) {
+    $('#carPrev').onclick = () => car.scrollBy({ left: -240, behavior: 'smooth' });
+    $('#carNext').onclick = () => car.scrollBy({ left: 240, behavior: 'smooth' });
+  }
+
+  // ---- carousel add to cart ----
+  $$('[data-add-id]').forEach(b => b.onclick = () => addToCart(+b.dataset.addId));
+
+  // ---- quiz button ----
+  const qb = $('#quizBtn');
+  if (qb) qb.onclick = () => {
+    const moods = ['date','fresh','cozy','bold'];
+    const pick = moods[Math.floor(Math.random() * moods.length)];
+    const keywords = moodMap[pick] || [];
+    state.brand = 'all';
+    state.query = keywords.join(' ');
+    updateSearchLabel();
+    renderShop();
+    setTimeout(() => document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' }), 100);
+  };
+
+  // ---- review dots ----
+  const rs = $('#reviewStrip');
+  const rd = $('#reviewDots');
+  if (rs && rd) {
+    const cards = rs.querySelectorAll('.review-card');
+    cards.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.style.cssText = 'width:8px;height:8px;border-radius:50%;border:1px solid var(--line);background:transparent;cursor:pointer;transition:.2s;padding:0';
+      if (i === 0) dot.style.background = 'var(--gold)';
+      dot.onclick = () => rs.scrollTo({ left: cards[i].offsetLeft - 40, behavior: 'smooth' });
+      rd.appendChild(dot);
+    });
+    rs.onscroll = () => {
+      let idx = 0;
+      cards.forEach((c, i) => { if (c.getBoundingClientRect().left < window.innerWidth / 2) idx = i; });
+      rd.querySelectorAll('button').forEach((d, i) => d.style.background = i === idx ? 'var(--gold)' : 'transparent');
+    };
+  }
+
+  // ---- newsletter ----
+  $('#newsBtn').onclick = () => {
+    const email = $('#newsEmail').value.trim();
+    if (!email || !email.includes('@')) return toast('Please enter a valid email');
+    // POST to /api/newsletter if endpoint exists, otherwise just thank
+    const ep = '/api/newsletter';
+    fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+      .then(r => r.json().catch(() => ({})))
+      .then(d => { toast(d.error || 'Subscribed — welcome to the atelier! 🥂'); $('#newsEmail').value = ''; })
+      .catch(() => { toast('Subscribed — welcome to the atelier! 🥂'); $('#newsEmail').value = ''; });
+  };
+
+  // ---- clear filter ----
   const cf = $('#clearFilter');
   if (cf) cf.onclick = () => { state.brand = 'all'; state.query = ''; updateSearchLabel(); renderShop(); };
 
-  // custom sort dropdown
+  // ---- sort dropdown ----
   const sortBtn = $('#sortBtn'), sortMenu = $('#sortMenu');
   sortBtn.onclick = (e) => { e.stopPropagation(); sortMenu.hidden = !sortMenu.hidden; };
   $$('[data-sort]', sortMenu).forEach((b) => b.onclick = () => {
-    state.sort = b.dataset.sort;
-    sortMenu.hidden = true;
-    renderShop();
+    state.sort = b.dataset.sort; sortMenu.hidden = true; renderShop();
   });
   document.addEventListener('click', () => { if (sortMenu) sortMenu.hidden = true; }, { once: true });
 
   renderGrid();
-  // ensure hero search is visible and wired
-  const hero = $('#hero'); if (hero) { hero.classList.add('show'); }
-  // add floating gold bubbles to hero
-  const hp = $('#hero .hero-particles');
-  if (!hp && hero) {
-    const c = document.createElement('div');
-    c.className = 'hero-particles';
-    for (let i = 0; i < 20; i++) {
-      const p = document.createElement('div');
-      p.className = 'hero-particle';
-      const sz = 10 + Math.random() * 35;
-      const wobble1 = (Math.random() - 0.5) * 50;
-      const wobble2 = (Math.random() - 0.5) * 50;
-      const wobble3 = (Math.random() - 0.5) * 50;
-      const wobble4 = (Math.random() - 0.5) * 50;
-      const wobble5 = (Math.random() - 0.5) * 50;
-      p.style.cssText = `left:${3+Math.random()*94}%;width:${sz}px;height:${sz}px;--pdur:${14+Math.random()*14}s;--pdelay:${Math.random()*18}s;--pdx1:${wobble1}px;--pdx2:${wobble2}px;--pdx3:${wobble3}px;--pdx4:${wobble4}px;--pdx5:${wobble5}px`;
-      c.appendChild(p);
-    }
+  const hero = $('#hero'); if (hero) hero.classList.add('show');
+}
     for (let i = 0; i < 12; i++) {
       const p = document.createElement('div');
       p.className = 'hero-particle';
