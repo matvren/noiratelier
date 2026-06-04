@@ -16,19 +16,32 @@ let ghSha = null;
 async function ghDownload() {
   if (!GITHUB_TOKEN) return 0;
   const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db?ref=${GH_BRANCH}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' }
-  });
-  if (res.ok) {
-    const { content } = await res.json();
-    const buf = Buffer.from(content, 'base64');
-    if (buf.length > 100) {
-      fs.writeFileSync(DB_PATH, buf);
-      return 2;
+  // Retry up to 2 times with a 10s timeout (GitHub API can be slow or flaky on Vercel cold starts)
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 10000);
+      const res = await fetch(url, {
+        signal: ac.signal,
+        headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' }
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const { content } = await res.json();
+        const buf = Buffer.from(content, 'base64');
+        if (buf.length > 100) {
+          fs.writeFileSync(DB_PATH, buf);
+          return 2;
+        }
+        return 0;
+      }
+      if (res.status === 404) return 1;
+      // non-404 error: retry
+      console.warn(`ghDownload attempt ${attempt + 1} failed (${res.status}), retrying…`);
+    } catch (e) {
+      console.warn(`ghDownload attempt ${attempt + 1} error: ${e.message}, retrying…`);
     }
-    return 0;
   }
-  if (res.status === 404) return 1;
   return -1;
 }
 

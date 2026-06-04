@@ -56,6 +56,7 @@ app.use(authOptional);
 
 // ---- auto-seed on fresh DB ----
 async function autoSeed() {
+  // If ghDownload succeeded or /tmp/noir.db has data, don't re-seed
   const prodCount = (await db.execute('SELECT COUNT(*) AS c FROM products')).rows[0].c;
   if (prodCount === 0) {
     const products = [
@@ -221,11 +222,13 @@ app.post('/api/logout', (_req, res) => {
 
 // ---------- products ----------
 app.get('/api/products', asyncHandler(async (_req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   const rows = (await db.execute('SELECT * FROM products WHERE active = 1 ORDER BY id ASC')).rows;
   res.json(rows);
 }));
 
 app.get('/api/admin/products', requireOwner, asyncHandler(async (_req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   const rows = (await db.execute('SELECT * FROM products ORDER BY id ASC')).rows;
   res.json(rows);
 }));
