@@ -6,6 +6,7 @@ import fs from 'fs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isVercel = !!process.env.VERCEL;
 const DB_PATH = isVercel ? '/tmp/noir.db' : path.join(__dirname, 'noir.db');
+const SNAP_PATH = isVercel ? '/tmp/noir_snap.db' : path.join(__dirname, 'noir_snap.db');
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const GH_OWNER = 'matvren';
 const GH_REPO = 'noiratelier';
@@ -26,32 +27,6 @@ async function ghDownload() {
   return -1;
 }
 
-let ghSha = null;
-async function ghUpload() {
-  if (!GITHUB_TOKEN) return;
-  try {
-    // flush WAL to main file before reading (use original execute to avoid recursion)
-    await _exec("PRAGMA wal_checkpoint(TRUNCATE)");
-    const content = fs.readFileSync(DB_PATH).toString('base64');
-    const getUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db?ref=${GH_BRANCH}`;
-    const getRes = await fetch(getUrl, {
-      headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' }
-    });
-    if (getRes.ok) ghSha = (await getRes.json()).sha;
-    const putRes = await fetch(
-      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`,
-      {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'sync noir.db', content, sha: ghSha, branch: GH_BRANCH }),
-      }
-    );
-    if (putRes.ok) { ghSha = (await putRes.json()).content.sha; }
-    else { const t = await putRes.text(); console.error('× GitHub sync err:', putRes.status, t.slice(0, 200)); }
-  } catch (e) { console.error('× GitHub sync:', e.message); }
-}
-
-// Restore DB from GitHub on startup
 const ghResult = await ghDownload();
 if (ghResult === 2) console.log('✓ Restored noir.db from GitHub');
 else if (ghResult === 1) console.log('• Starting fresh');
@@ -95,15 +70,59 @@ if (!ocols.includes('customer_confirmed')) {
   try { await db.execute('ALTER TABLE orders ADD COLUMN customer_confirmed INTEGER DEFAULT 0'); } catch (e) { /* ignore */ }
 }
 
+// ---- GitHub sync (debounced, uses VACUUM INTO for consistent snapshot) ----
+let ghSha = null;
+let ghTimer = null;
+let ghPending = false;
+const _exec = db.execute.bind(db);
+
+async function ghUpload() {
+  if (!GITHUB_TOKEN) return;
+  ghPending = false;
+  try {
+    // VACUUM INTO creates a clean, consistent snapshot — no WAL issues
+    await _exec(`VACUUM INTO '${SNAP_PATH}'`);
+    const content = fs.readFileSync(SNAP_PATH).toString('base64');
+    try { fs.unlinkSync(SNAP_PATH); } catch {}
+    const getUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db?ref=${GH_BRANCH}`;
+    const getRes = await fetch(getUrl, {
+      headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' }
+    });
+    if (getRes.ok) ghSha = (await getRes.json()).sha;
+    const putRes = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`,
+      {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'sync noir.db', content, sha: ghSha, branch: GH_BRANCH }),
+      }
+    );
+    if (putRes.ok) { ghSha = (await putRes.json()).content.sha; }
+    else { const t = await putRes.text(); console.error('× GitHub sync err:', putRes.status, t.slice(0, 200)); }
+  } catch (e) { console.error('× GitHub sync:', e.message); }
+}
+
+function scheduleUpload() {
+  if (!ghPending) {
+    ghPending = true;
+    clearTimeout(ghTimer);
+    ghTimer = setTimeout(ghUpload, 500);
+  } else {
+    // another upload is already scheduled — push it further out
+    clearTimeout(ghTimer);
+    ghTimer = setTimeout(ghUpload, 500);
+  }
+}
+
 // Auto-sync after writes (to db-backup branch, won't trigger Vercel deploys)
 let ready = false;
-const _exec = db.execute.bind(db);
+const __exec = db.execute.bind(db);
 db.execute = async function (input) {
-  const result = await _exec(input);
+  const result = await __exec(input);
   if (ready) {
     const sql = typeof input === 'string' ? input : input.sql;
     if (/^\s*(INSERT|UPDATE|DELETE)\b/i.test(sql.trim())) {
-      setImmediate(() => ghUpload().catch(() => {}));
+      scheduleUpload();
     }
   }
   return result;
