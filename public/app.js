@@ -52,7 +52,10 @@ function toast(msg) {
 
 // ---------- guest cart (localStorage) ----------
 const GUEST_KEY = 'noir_guest_cart';
+const CART_VER_KEY = 'noir_cart_v2';
 function loadGuest() {
+  // wipe old guest cart after code update
+  if (!localStorage.getItem(CART_VER_KEY)) { localStorage.removeItem(GUEST_KEY); localStorage.setItem(CART_VER_KEY, '1'); }
   try { state.guestCart = JSON.parse(localStorage.getItem(GUEST_KEY)) || []; }
   catch { state.guestCart = []; }
 }
