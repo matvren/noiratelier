@@ -116,5 +116,7 @@ for (const col of ['shipping_name','shipping_address','shipping_city','shipping_
 if (!ocols.includes('customer_confirmed')) {
   try { await db.execute('ALTER TABLE orders ADD COLUMN customer_confirmed INTEGER DEFAULT 0'); } catch (e) { /* ignore */ }
 }
+// Clear ephemeral cart data on every startup — carts don't survive cold starts
+await db.execute('DELETE FROM cart_items');
 
 export default db;
