@@ -736,13 +736,13 @@ input:-webkit-autofill:hover{
 @keyframes cart-bounce{0%{transform:scale(1)}35%{transform:scale(1.35)}60%{transform:scale(.85)}100%{transform:scale(1)}}
 .cart-bounce{animation:cart-bounce .4s cubic-bezier(.2,.9,.25,1)}
 
-/* hero actions row */
-.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:10px}
-.hero-actions .btn-minimal{background:transparent;border:1px solid var(--line);color:var(--muted);padding:12px 24px;border-radius:40px;font-size:13px;font-weight:400;box-shadow:none;min-width:auto;width:auto}
-.hero-actions .btn-minimal:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px);box-shadow:none}
+/* surprise me link */
+.hero-surprise{display:flex;flex-direction:column;align-items:center;gap:6px}
+.surprise-link{background:none;border:none;color:var(--muted-2);font-size:13px;letter-spacing:.5px;cursor:pointer;transition:.2s;padding:0}
+.surprise-link:hover{color:var(--gold)}
 
 /* recently viewed strip */
-.recent-strip{padding:0 clamp(18px,5vw,56px);max-width:1280px;margin:-30px auto 0;position:relative;z-index:2}
+.recent-strip{margin-bottom:20px}
 .recent-head{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted-2);margin-bottom:12px}
 .recent-items{display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
 .recent-items::-webkit-scrollbar{display:none}

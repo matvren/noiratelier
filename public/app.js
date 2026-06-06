@@ -576,13 +576,11 @@ function renderShop() {
       <div class="eyebrow">Designer & Niche · Curated</div>
       <h1>The art of <em>scent</em>,<br/>refined to its essence.</h1>
       <p>A quiet edit of the world's compelling fragrances — authenticated, beautifully kept, and shipped with care.</p>
-      <div class="hero-actions">
+      <div class="hero-surprise">
         <a href="#shop" class="btn-primary" id="exploreBtn">Explore the collection</a>
-        <button type="button" class="btn-minimal secondary" id="surpriseBtn">Surprise Me</button>
+        <button type="button" class="surprise-link" id="surpriseBtn">or surprise me →</button>
       </div>
     </section>
-    ${renderRecentStrip()}
-    ${renderTestimonials()}
     <section class="section" id="shop">
       <div class="section-head">
         <div>
@@ -601,8 +599,10 @@ function renderShop() {
         </div>
       </div>
 
+      ${renderRecentStrip()}
       <div class="grid" id="shopGrid"></div>
-    </section>`;
+    </section>
+    ${renderTestimonials()}`;
 
   // clear active filter
   const cf = $('#clearFilter');
