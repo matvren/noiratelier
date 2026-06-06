@@ -1451,11 +1451,6 @@ async function renderAdmin() {
         <td>
           <div class="img-cell">
             <div class="img-thumb dropzone" tabindex="0" title="Click to upload, or drag/paste an image here" style="${p.image ? '' : `background:linear-gradient(160deg,${p.accent},#0c0c0e)`}">${p.image ? `<img class="thumb-img" src="${p.image}${p.image.startsWith('data:') ? '' : '?t=' + Date.now()}" alt=""/>` : ''}<span class="drop-hint">drop / paste</span></div>
-            <select class="img-lib-select" data-img-sel="${p.id}" style="font-size:11px;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;width:100%;margin-bottom:4px">
-              <option value="">— Library —</option>
-              ${libImages.map(img => `<option value="${img.data_url}" ${p.image === img.data_url ? 'selected' : ''}>${img.name}</option>`).join('')}
-              <option value="__upload__">Upload new…</option>
-            </select>
             <button class="upload" type="button">Upload</button>
             <input type="file" class="file-in" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden/>
           </div>
@@ -1566,23 +1561,6 @@ async function renderAdmin() {
     const url = el.dataset.url;
     if (navigator.clipboard) { navigator.clipboard.writeText(url).then(() => toast('Image URL copied')); }
     else { toast('Could not copy'); }
-  });
-  // Image library select in table rows
-  $$('.img-lib-select').forEach(sel => sel.onchange = async function() {
-    const id = +this.dataset.imgSel;
-    const val = this.value;
-    if (!val) return;
-    if (val === '__upload__') {
-      // show upload UI — find the upload button in this cell
-      this.parentElement.querySelector('.upload').click();
-      this.value = '';
-      return;
-    }
-    try {
-      await api('/api/admin/products/' + id + '/image-url', { method: 'POST', body: { url: val } });
-      toast('Image updated');
-      renderAdmin();
-    } catch (e) { toast(e.message); }
   });
   function renderNotePills(query) {
     const body = $('#notePickerBody');
