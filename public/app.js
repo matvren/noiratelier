@@ -1341,8 +1341,11 @@ async function renderAdmin() {
         <h3>Image Library</h3>
         <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
           <input id="imgLibName" placeholder="Image name (e.g. Sauvage bottle)" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:14px"/>
-          <div class="add-drop" id="imgLibDrop" style="flex:0 0 auto;padding:10px 24px;display:flex;align-items:center;gap:8px;cursor:pointer">
-            <span>+ Upload PNG</span>
+          <div class="add-drop" id="imgLibDrop" style="flex:1;min-width:200px;padding:18px 24px">
+            <div class="add-drop-inner" id="imgLibDropInner">
+              <span class="add-drop-icon">+</span>
+              <span class="add-drop-text">Drop a PNG here, paste an image URL, or click to browse</span>
+            </div>
             <input type="file" id="imgLibFile" accept="image/png,image/jpeg,image/webp" hidden/>
           </div>
         </div>
@@ -1470,31 +1473,77 @@ async function renderAdmin() {
     const p = $('#imgLibPanel');
     p.style.display = p.style.display === 'none' ? '' : 'none';
   };
-  // Image library upload
+  // Image library upload (file + drag-drop + paste)
   const imgLibFile = $('#imgLibFile');
   const imgLibDrop = $('#imgLibDrop');
   const imgLibName = $('#imgLibName');
-  imgLibDrop.onclick = () => imgLibFile.click();
-  imgLibFile.onchange = async () => {
-    const f = imgLibFile.files[0];
+  async function saveLibImage(dataUrl, name) {
+    if (!name) return toast('Enter a name for the image');
+    try {
+      await api('/api/admin/images', { method: 'POST', body: { name, data_url: dataUrl } });
+      toast('Image saved');
+      api('/api/admin/save', { method: 'POST' }).catch(() => {});
+      renderAdmin();
+    } catch (e) { toast(e.message); }
+  }
+  async function handleLibFile(f) {
     if (!f) return;
     if (!/^image\//.test(f.type)) return toast('Not an image');
     if (f.size > 8 * 1024 * 1024) return toast('Image too large');
     const name = imgLibName.value.trim();
-    if (!name) return toast('Enter a name for the image');
+    const dataUrl = await fileToDataUrl(f);
+    await saveLibImage(dataUrl, name);
+  }
+  async function handleLibUrl(url) {
+    if (!/^https?:\/\//i.test(url)) return toast('Not a valid image URL');
+    const name = imgLibName.value.trim() || 'Imported';
+    imgLibDrop.classList.add('dragover');
     try {
-      const dataUrl = await fileToDataUrl(f);
-      await api('/api/admin/images', { method: 'POST', body: { name, data_url: dataUrl } });
-      toast('Image saved');
-      renderAdmin();
-    } catch (e) { toast(e.message); }
-  };
-  // Image library delete
+      // Fetch the image through our server to avoid CORS issues
+      const res = await fetch(url);
+      const blob = await res.blob();
+      if (!/^image\//.test(blob.type)) return toast('URL does not point to an image');
+      const dataUrl = await fileToDataUrl(new File([blob], 'image.png', { type: blob.type }));
+      await saveLibImage(dataUrl, name);
+    } catch (e) { toast('Could not load image from URL: ' + e.message); }
+    imgLibDrop.classList.remove('dragover');
+  }
+  imgLibDrop.onclick = () => imgLibFile.click();
+  imgLibFile.onchange = () => handleLibFile(imgLibFile.files[0]);
+  // Drag & drop for image library
+  imgLibDrop.addEventListener('dragenter', (e) => { e.preventDefault(); imgLibDrop.classList.add('dragover'); });
+  imgLibDrop.addEventListener('dragover', (e) => { e.preventDefault(); imgLibDrop.classList.add('dragover'); });
+  imgLibDrop.addEventListener('dragleave', () => imgLibDrop.classList.remove('dragover'));
+  imgLibDrop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    imgLibDrop.classList.remove('dragover');
+    const dt = e.dataTransfer;
+    if (dt.files && dt.files.length) return handleLibFile(dt.files[0]);
+    // dragged from another site — get URL
+    const url = dt.getData('text/uri-list') || dt.getData('text/plain');
+    const html = dt.getData('text/html');
+    if (html) {
+      const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (m) return handleLibUrl(m[1]);
+    }
+    if (url) return handleLibUrl(url);
+    toast('Could not read that image — try saving it and uploading the file');
+  });
+  // Paste support for image library
+  imgLibDrop.addEventListener('paste', (e) => {
+    const items = e.clipboardData?.items || [];
+    for (const it of items) {
+      if (it.type.startsWith('image/')) { e.preventDefault(); return handleLibFile(it.getAsFile()); }
+    }
+    const text = e.clipboardData?.getData('text');
+    if (text && /^https?:\/\//i.test(text)) { e.preventDefault(); return handleLibUrl(text); }
+  });
+  // Image library delete + save
   $$('[data-del-lib]').forEach(b => b.onclick = async (e) => {
     e.stopPropagation();
     const id = +b.dataset.delLib;
     if (!confirm('Delete this image from library?')) return;
-    try { await api('/api/admin/images/' + id, { method: 'DELETE' }); toast('Deleted'); renderAdmin(); } catch (e) { toast(e.message); }
+    try { await api('/api/admin/images/' + id, { method: 'DELETE' }); toast('Deleted'); api('/api/admin/save', { method: 'POST' }).catch(() => {}); renderAdmin(); } catch (e) { toast(e.message); }
   });
   // Click library image to copy URL
   $$('.lib-img').forEach(el => el.onclick = () => {
