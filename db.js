@@ -115,6 +115,10 @@ await db.execute(`CREATE TABLE IF NOT EXISTS cart_items (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 )`);
+await db.execute(`CREATE TABLE IF NOT EXISTS product_images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL,
+  data_url TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now'))
+)`);
 await db.execute(`CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, email TEXT,
   total INTEGER NOT NULL, items_json TEXT, status TEXT DEFAULT 'paid',

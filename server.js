@@ -324,6 +324,31 @@ app.post('/api/admin/save', requireOwner, asyncHandler(async (_req, res) => {
   else res.status(500).json({ error: result.error });
 }));
 
+// ---------- image library ----------
+app.get('/api/admin/images', requireOwner, asyncHandler(async (_req, res) => {
+  const rows = (await db.execute('SELECT * FROM product_images ORDER BY name ASC')).rows;
+  res.json(rows);
+}));
+
+app.post('/api/admin/images', requireOwner, asyncHandler(async (req, res) => {
+  const { name, data_url } = req.body || {};
+  if (!name || !data_url) return res.status(400).json({ error: 'Name and image required.' });
+  const result = await db.execute({
+    sql: 'INSERT INTO product_images (name, data_url) VALUES (?, ?)',
+    args: [name.trim(), data_url],
+  });
+  const row = (await db.execute({
+    sql: 'SELECT * FROM product_images WHERE id = ?',
+    args: [Number(result.lastInsertRowid)],
+  })).rows[0];
+  res.json(row);
+}));
+
+app.delete('/api/admin/images/:id', requireOwner, asyncHandler(async (req, res) => {
+  await db.execute({ sql: 'DELETE FROM product_images WHERE id = ?', args: [+req.params.id] });
+  res.json({ ok: true });
+}));
+
 // ---------- cart ----------
 async function getCart(userId) {
   return (await db.execute({

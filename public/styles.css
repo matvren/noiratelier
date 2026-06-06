@@ -663,6 +663,20 @@ input:-webkit-autofill:hover{
 .add-drop.has-img::before{display:none}
 .add-drop-img{width:100%;max-height:180px;object-fit:contain;border-radius:10px;display:block}
 
+/* note picker pills */
+.note-pick-btn{background:none;border:none;cursor:pointer;font-size:14px;vertical-align:middle;padding:2px 4px;transition:.15s;border-radius:4px}
+.note-pick-btn:hover{background:rgba(184,151,90,.15)}
+.note-pill{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;transition:.15s;font-family:var(--sans)}
+.note-pill:hover{border-color:var(--gold);color:var(--text)}
+.note-pill.sel{background:var(--gold);color:#000;border-color:var(--gold)}
+
+/* image library grid */
+.lib-img:hover{border-color:var(--gold)!important}
+.lib-img img{transition:.15s}
+.lib-img:hover img{transform:scale(1.04)}
+.lib-img button{opacity:0;transition:.15s}
+.lib-img:hover button{opacity:1}
+
 /* Generic button (non-primary) */
 .btn{appearance:none;border:1px solid var(--line);background:transparent;color:var(--text);padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer}
 .btn:hover{border-color:var(--gold);color:var(--gold)}

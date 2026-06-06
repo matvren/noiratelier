@@ -1,4 +1,17 @@
 // ---------------- NOIR ATELIER frontend ----------------
+const COMMON_NOTES = {
+  citrus:    ['Bergamot','Lemon','Grapefruit','Orange','Mandarin','Yuzu','Lime','Citron','Bitter Orange'],
+  fruity:    ['Apple','Pear','Peach','Pineapple','Black Currant','Raspberry','Strawberry','Cherry','Plum','Fig','Coconut'],
+  floral:    ['Rose','Jasmine','Lavender','Geranium','Violet','Iris','Lily','Peony','Ylang','Orange Blossom','Tuberose','Neroli','Lotus','Heliotrope'],
+  spicy:     ['Cinnamon','Clove','Nutmeg','Cardamom','Ginger','Pepper','Saffron','Coriander','Caraway','Anise'],
+  woody:     ['Cedar','Sandalwood','Pine','Vetiver','Oud','Rosewood','Oak','Cypress','Guaiac Wood'],
+  'amber/vanilla': ['Amber','Vanilla','Tonka','Benzoin','Labdanum','Cistus','Myrrh','Frankincense'],
+  green:     ['Sage','Rosemary','Thyme','Basil','Mint','Patchouli','Oakmoss','Moss','Hay','Mate'],
+  animalic:  ['Musk','Leather','Ambergris','Civet','Castoreum'],
+  gourmand:  ['Tobacco','Coffee','Chocolate','Cacao','Honey','Caramel','Almond','Rum','Whiskey'],
+  aquatic:   ['Marine','Sea Salt','Ozone','Calone','Seaweed'],
+  other:     ['Incense','Birch','Styrax','Suede','Cotton','Aldehydes','Iso E Super','Ambroxan','Timbersilk'],
+};
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
@@ -787,7 +800,7 @@ function renderProduct(id) {
           </div>
           <button class="product-fav ${faved ? 'on' : ''}" id="pFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
           <button class="product-share" id="pShare"><span style="font-size:14px">↗</span> Share</button>
-          ${(p.note_top || p.note_mid || p.note_base) ? `<div class="frag-pyramid"><h4 class="frag-head">Fragrance notes</h4>${[['top', p.note_top], ['heart', p.note_mid], ['base', p.note_base]].filter(([,v]) => v).map(([l, v]) => `<div class="frag-level"><span class="frag-level-label">${l}</span><span class="frag-level-notes">${v}</span></div>`).join('')}</div>` : ''}
+          ${(p.note_top || p.note_mid || p.note_base) ? `<div class="frag-pyramid"><h4 class="frag-head">Fragrance notes</h4>${[['top', p.note_top], ['middle', p.note_mid], ['base', p.note_base]].filter(([,v]) => v).map(([l, v]) => `<div class="frag-level"><span class="frag-level-label">${l}</span><span class="frag-level-notes">${v}</span></div>`).join('')}</div>` : ''}
         </div>
       </div>
     </section>`;
@@ -1310,6 +1323,7 @@ async function renderAdmin() {
   const products = await api('/api/admin/products');
   const orders = await api('/api/admin/orders').catch(() => []);
   const revenue = orders.reduce((s, o) => s + o.total, 0);
+  const libImages = await api('/api/admin/images').catch(() => []);
 
   $('#view').innerHTML = `
     <section class="section">
@@ -1323,8 +1337,23 @@ async function renderAdmin() {
         <button id="saveGithub" style="background:var(--gold);color:#000;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap">Save to GitHub</button>
       </div>
 
+      <div class="card-panel" id="imgLibPanel" style="display:none">
+        <h3>Image Library</h3>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <input id="imgLibName" placeholder="Image name (e.g. Sauvage bottle)" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:14px"/>
+          <div class="add-drop" id="imgLibDrop" style="flex:0 0 auto;padding:10px 24px;display:flex;align-items:center;gap:8px;cursor:pointer">
+            <span>+ Upload PNG</span>
+            <input type="file" id="imgLibFile" accept="image/png,image/jpeg,image/webp" hidden/>
+          </div>
+        </div>
+        <div id="imgLibGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px">${libImages.map(img => `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer" class="lib-img" data-url="${img.data_url}"><img src="${img.data_url}" style="width:100%;height:70px;object-fit:contain;border-radius:4px;background:#0c0c0e"/><span style="font-size:10px;color:var(--muted);text-align:center;word-break:break-all;max-width:100%">${img.name}</span><button class="btn-sm" style="font-size:9px;padding:2px 6px;color:var(--muted-2)" data-del-lib="${img.id}">✕</button></div>`).join('')}</div>
+      </div>
+
       <div class="card-panel">
-        <h3>Add a new fragrance</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <h3 style="margin:0">Add a new fragrance</h3>
+          <button type="button" id="toggleImgLib" style="background:none;border:1px solid var(--line);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:12px;white-space:nowrap">📷 Image Library</button>
+        </div>
         <div class="form-row-2">
           <div class="field"><span>Name</span><input id="n_name" placeholder="Sauvage EDP"/></div>
           <div class="field"><span>Brand</span><input id="n_brand" placeholder="Dior"/></div>
@@ -1338,12 +1367,22 @@ async function renderAdmin() {
           <div class="field"><span>Description <span style="font-weight:400;text-transform:none;color:var(--muted-2)">auto-generated from notes</span><button type="button" id="nRegen" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:11px;margin-left:6px;text-decoration:underline">↻ regenerate</button></span><input id="n_desc" placeholder="The description is auto-generated from brand + name + notes"/></div>
         </div>
         <div class="form-row-2">
-          <div class="field"><span>Top notes</span><input id="n_top" placeholder="Bergamot · Pepper"/></div>
-          <div class="field"><span>Heart notes</span><input id="n_mid" placeholder="Lavender · Geranium"/></div>
+          <div class="field"><span>Top notes <button type="button" class="note-pick-btn" data-target="n_top">🎯</button></span><input id="n_top" placeholder="Bergamot · Pepper"/></div>
+          <div class="field"><span>Middle notes <button type="button" class="note-pick-btn" data-target="n_mid">🎯</button></span><input id="n_mid" placeholder="Lavender · Geranium"/></div>
         </div>
         <div class="form-row-2">
-          <div class="field"><span>Base notes</span><input id="n_base" placeholder="Ambroxan · Cedar"/></div>
+          <div class="field"><span>Base notes <button type="button" class="note-pick-btn" data-target="n_base">🎯</button></span><input id="n_base" placeholder="Ambroxan · Cedar"/></div>
           <div class="field"></div>
+        </div>
+        <div id="notePicker" style="display:none;margin-bottom:14px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px">
+          <div style="font-size:12px;color:var(--muted-2);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase">Pick notes — click to select, then press →Top, →Mid or →Base</div>
+          ${Object.entries(COMMON_NOTES).map(([cat, notes]) => `<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted-2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">${cat}</div><div style="display:flex;flex-wrap:wrap;gap:4px">${notes.map(n => `<button type="button" class="note-pill" data-note="${n}">${n}</button>`).join('')}</div></div>`).join('')}
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button type="button" class="btn-sm" style="background:var(--gold);color:#000;border:none;font-size:12px" id="noteFillTop">→ Top</button>
+            <button type="button" class="btn-sm" style="background:var(--gold);color:#000;border:none;font-size:12px" id="noteFillMid">→ Mid</button>
+            <button type="button" class="btn-sm" style="background:var(--gold);color:#000;border:none;font-size:12px" id="noteFillBase">→ Base</button>
+            <button type="button" class="btn-sm" style="border-color:var(--line);color:var(--muted);font-size:12px" id="notePickerClose">Close</button>
+          </div>
         </div>
         <div class="field"><span>Image <span style="font-weight:400;text-transform:none;color:var(--muted-2)">(optional)</span></span>
           <div class="add-drop" id="nDrop">
@@ -1362,7 +1401,7 @@ async function renderAdmin() {
         <h3>Manage collection</h3>
         <div style="overflow-x:auto">
         <table class="atable">
-          <thead><tr><th>Image</th><th>Brand</th><th>Name</th><th>Notes</th><th>Top</th><th>Heart</th><th>Base</th><th>Size</th><th>Price</th><th>Stock</th><th></th></tr></thead>
+          <thead><tr><th>Image</th><th>Brand</th><th>Name</th><th>Notes</th><th>Top</th><th>Mid</th><th>Base</th><th>Size</th><th>Price</th><th>Stock</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
         </div>
@@ -1402,6 +1441,11 @@ async function renderAdmin() {
         <td>
           <div class="img-cell">
             <div class="img-thumb dropzone" tabindex="0" title="Click to upload, or drag/paste an image here" style="${p.image ? '' : `background:linear-gradient(160deg,${p.accent},#0c0c0e)`}">${p.image ? `<img class="thumb-img" src="${p.image}${p.image.startsWith('data:') ? '' : '?t=' + Date.now()}" alt=""/>` : ''}<span class="drop-hint">drop / paste</span></div>
+            <select class="img-lib-select" data-img-sel="${p.id}" style="font-size:11px;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;width:100%;margin-bottom:4px">
+              <option value="">— Library —</option>
+              ${libImages.map(img => `<option value="${img.data_url}" ${p.image === img.data_url ? 'selected' : ''}>${img.name}</option>`).join('')}
+              <option value="__upload__">Upload new…</option>
+            </select>
             <button class="upload" type="button">Upload</button>
             <input type="file" class="file-in" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden/>
           </div>
@@ -1420,6 +1464,80 @@ async function renderAdmin() {
     $$('.atable tbody tr[data-id]').forEach(bindRow);
   }
   renderAdminTable(products);
+
+  // Image library toggle
+  $('#toggleImgLib').onclick = () => {
+    const p = $('#imgLibPanel');
+    p.style.display = p.style.display === 'none' ? '' : 'none';
+  };
+  // Image library upload
+  const imgLibFile = $('#imgLibFile');
+  const imgLibDrop = $('#imgLibDrop');
+  const imgLibName = $('#imgLibName');
+  imgLibDrop.onclick = () => imgLibFile.click();
+  imgLibFile.onchange = async () => {
+    const f = imgLibFile.files[0];
+    if (!f) return;
+    if (!/^image\//.test(f.type)) return toast('Not an image');
+    if (f.size > 8 * 1024 * 1024) return toast('Image too large');
+    const name = imgLibName.value.trim();
+    if (!name) return toast('Enter a name for the image');
+    try {
+      const dataUrl = await fileToDataUrl(f);
+      await api('/api/admin/images', { method: 'POST', body: { name, data_url: dataUrl } });
+      toast('Image saved');
+      renderAdmin();
+    } catch (e) { toast(e.message); }
+  };
+  // Image library delete
+  $$('[data-del-lib]').forEach(b => b.onclick = async (e) => {
+    e.stopPropagation();
+    const id = +b.dataset.delLib;
+    if (!confirm('Delete this image from library?')) return;
+    try { await api('/api/admin/images/' + id, { method: 'DELETE' }); toast('Deleted'); renderAdmin(); } catch (e) { toast(e.message); }
+  });
+  // Click library image to copy URL
+  $$('.lib-img').forEach(el => el.onclick = () => {
+    const url = el.dataset.url;
+    if (navigator.clipboard) { navigator.clipboard.writeText(url).then(() => toast('Image URL copied')); }
+    else { toast('Could not copy'); }
+  });
+  // Image library select in table rows
+  $$('.img-lib-select').forEach(sel => sel.onchange = async function() {
+    const id = +this.dataset.imgSel;
+    const val = this.value;
+    if (!val) return;
+    if (val === '__upload__') {
+      // show upload UI — find the upload button in this cell
+      this.parentElement.querySelector('.upload').click();
+      this.value = '';
+      return;
+    }
+    try {
+      await api('/api/admin/products/' + id + '/image-url', { method: 'POST', body: { url: val } });
+      toast('Image updated');
+      api('/api/admin/save', { method: 'POST' }).catch(() => {});
+      renderAdmin();
+    } catch (e) { toast(e.message); }
+  });
+  // Note picker
+  $$('.note-pick-btn').forEach(btn => btn.onclick = () => {
+    const picker = $('#notePicker');
+    picker.style.display = picker.style.display === 'none' ? '' : 'none';
+    state._noteTarget = btn.dataset.target;
+  });
+  // Note pills toggle
+  $$('.note-pill').forEach(pill => pill.onclick = function() { this.classList.toggle('sel'); });
+  function fillNotes(targetId) {
+    const sel = [...document.querySelectorAll('.note-pill.sel')].map(p => p.dataset.note);
+    if (!sel.length) return;
+    const inp = $('#' + targetId);
+    inp.value = inp.value ? inp.value + ' · ' + sel.join(' · ') : sel.join(' · ');
+  }
+  $('#noteFillTop').onclick = () => fillNotes('n_top');
+  $('#noteFillMid').onclick = () => fillNotes('n_mid');
+  $('#noteFillBase').onclick = () => fillNotes('n_base');
+  $('#notePickerClose').onclick = () => { $('#notePicker').style.display = 'none'; };
 
   let _newImgDataUrl = null;
   const nFileIn = $('#nImgFile');
