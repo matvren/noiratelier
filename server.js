@@ -355,6 +355,69 @@ app.delete('/api/admin/images/:id', requireOwner, asyncHandler(async (req, res) 
   res.json({ ok: true });
 }));
 
+// ---------- fetch perfume notes from Parfumo ----------
+app.post('/api/admin/fetch-parfumo', requireOwner, asyncHandler(async (req, res) => {
+  const { url } = req.body || {};
+  if (!url || typeof url !== 'string') return res.status(400).json({ error: 'URL required.' });
+  const m = url.match(/parfumo\.com\/Perfumes\/([^/]+)\/([^/\s?#]+)/i);
+  if (!m) return res.status(400).json({ error: 'Could not parse Parfumo URL. Expected: https://www.parfumo.com/Perfumes/BRAND/PERFUME_NAME' });
+  const brandSlug = decodeURIComponent(m[1]);
+  const nameSlug = decodeURIComponent(m[2]).replace(/_/g, ' ');
+  try {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10000);
+    const html = await (await fetch(url, { signal: ac.signal })).text();
+    clearTimeout(timer);
+    // Extract notes from .notes_list
+    const notesMatch = html.match(/<div class="notes_list[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i);
+    const notes = [];
+    if (notesMatch) {
+      const noteRe = /<img[^>]*alt="([^"]*)"[^>]*class="np[^"]*"[^>]*>\s*([^<]+)/g;
+      let nn;
+      while ((nn = noteRe.exec(notesMatch[1])) !== null) {
+        const noteName = (nn[2] || nn[1]).trim().replace(/<[^>]+>/g, '').trim();
+        if (noteName) notes.push(noteName);
+      }
+    }
+    // Try to extract brand and name from page title
+    const titleMatch = html.match(/<title>([^<]+)<\/title>/);
+    const pageTitle = titleMatch ? titleMatch[1].trim() : '';
+    // Also try Fragrantica for pyramid breakdown
+    let top = '', mid = '', base = '';
+    // Derive a possible Fragrantica slug
+    const fragrBrand = brandSlug.toLowerCase().replace(/\s+/g, '-');
+    const fragrName = nameSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const fragrUrl = `https://www.fragrantica.com/perfume/${encodeURIComponent(brandSlug)}/${encodeURIComponent(nameSlug.replace(/\s+/g, '-'))}.html`;
+    try {
+      const ac2 = new AbortController();
+      const timer2 = setTimeout(() => ac2.abort(), 8000);
+      const fragrHtml = await (await fetch(fragrUrl, { signal: ac2.signal })).text();
+      clearTimeout(timer2);
+      // Try different selector patterns for pyramid notes
+      const pyrSections = fragrHtml.match(/<div[^>]*class="[^"]*pyramid[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/i);
+      const pyrText = pyrSections ? pyrSections[0] : fragrHtml;
+      // Top notes
+      const topM = pyrText.match(/Top\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
+      if (topM) top = topM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
+      // Middle / Heart notes
+      const midM = pyrText.match(/(?:Middle|Heart)\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
+      if (midM) mid = midM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
+      // Base notes
+      const baseM = pyrText.match(/Base\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
+      if (baseM) base = baseM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
+    } catch (e) { /* Fragrantica optional */ }
+    res.json({
+      brand: brandSlug,
+      name: nameSlug,
+      notes: notes.join(' · '),
+      note_top: top || '',
+      note_mid: mid || '',
+      note_base: base || '',
+      pageTitle,
+    });
+  } catch (e) { res.status(500).json({ error: 'Failed to fetch Parfumo page: ' + e.message }); }
+}));
+
 // ---------- notes management ----------
 app.get('/api/admin/notes', requireOwner, asyncHandler(async (_req, res) => {
   const rows = (await db.execute('SELECT * FROM notes ORDER BY category ASC, name ASC')).rows;

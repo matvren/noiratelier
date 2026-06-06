@@ -1386,6 +1386,10 @@ async function renderAdmin() {
             <button type="button" id="toggleNoteLib" style="background:none;border:1px solid var(--line);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:12px;white-space:nowrap">📓 Notes</button>
           </div>
         </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+          <input id="n_parfumo" placeholder="https://www.parfumo.com/Perfumes/Dior/Sauvage_Eau_de_Parfum" style="flex:1;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--muted-2);font-family:inherit;font-size:13px"/>
+          <button type="button" id="fetchParfumo" style="background:none;border:1px solid var(--gold);color:var(--gold);padding:10px 18px;border-radius:10px;cursor:pointer;font-size:13px;white-space:nowrap">Fetch</button>
+        </div>
         <div class="form-row-2">
           <div class="field"><span>Name</span><input id="n_name" placeholder="Sauvage EDP"/></div>
           <div class="field"><span>Brand</span><input id="n_brand" placeholder="Dior"/></div>
@@ -1768,6 +1772,25 @@ async function renderAdmin() {
       toast(e.message);
       setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 3000);
     }
+  };
+
+  // Fetch from Parfumo
+  $('#fetchParfumo').onclick = async () => {
+    const url = $('#n_parfumo').value.trim();
+    if (!url) return toast('Enter a Parfumo URL first');
+    $('#fetchParfumo').textContent = 'Fetching…';
+    try {
+      const data = await api('/api/admin/fetch-parfumo', { method: 'POST', body: { url } });
+      if (data.name) $('#n_name').value = data.name;
+      if (data.brand) $('#n_brand').value = data.brand;
+      if (data.notes) $('#n_notes').value = data.notes;
+      if (data.note_top) $('#n_top').value = data.note_top;
+      if (data.note_mid) $('#n_mid').value = data.note_mid;
+      if (data.note_base) $('#n_base').value = data.note_base;
+      if (data.pageTitle) toast('Fetched: ' + data.pageTitle);
+      else toast('Fetched ✓');
+    } catch (e) { toast(e.message); }
+    $('#fetchParfumo').textContent = 'Fetch';
   };
 
   $('#addProduct').onclick = async () => {
