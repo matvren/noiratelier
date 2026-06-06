@@ -115,6 +115,33 @@ await db.execute(`CREATE TABLE IF NOT EXISTS cart_items (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 )`);
+await db.execute(`CREATE TABLE IF NOT EXISTS notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, category TEXT NOT NULL
+)`);
+const noteCount = (await db.execute('SELECT COUNT(*) AS c FROM notes')).rows[0].c;
+if (noteCount === 0) {
+  const defaultNotes = [
+    ['Bergamot','citrus'],['Lemon','citrus'],['Grapefruit','citrus'],['Orange','citrus'],['Mandarin','citrus'],['Yuzu','citrus'],['Lime','citrus'],['Citron','citrus'],['Bitter Orange','citrus'],
+    ['Apple','fruity'],['Pear','fruity'],['Peach','fruity'],['Pineapple','fruity'],['Black Currant','fruity'],['Raspberry','fruity'],['Strawberry','fruity'],['Cherry','fruity'],['Plum','fruity'],['Fig','fruity'],['Coconut','fruity'],
+    ['Rose','floral'],['Jasmine','floral'],['Lavender','floral'],['Geranium','floral'],['Violet','floral'],['Iris','floral'],['Lily','floral'],['Peony','floral'],['Ylang','floral'],['Orange Blossom','floral'],['Tuberose','floral'],['Neroli','floral'],['Lotus','floral'],['Heliotrope','floral'],
+    ['Cinnamon','spicy'],['Clove','spicy'],['Nutmeg','spicy'],['Cardamom','spicy'],['Ginger','spicy'],['Pepper','spicy'],['Saffron','spicy'],['Coriander','spicy'],['Caraway','spicy'],['Anise','spicy'],
+    ['Cedar','woody'],['Sandalwood','woody'],['Pine','woody'],['Vetiver','woody'],['Oud','woody'],['Rosewood','woody'],['Oak','woody'],['Cypress','woody'],['Guaiac Wood','woody'],
+    ['Amber','amber/vanilla'],['Vanilla','amber/vanilla'],['Tonka','amber/vanilla'],['Benzoin','amber/vanilla'],['Labdanum','amber/vanilla'],['Cistus','amber/vanilla'],['Myrrh','amber/vanilla'],['Frankincense','amber/vanilla'],
+    ['Sage','green'],['Rosemary','green'],['Thyme','green'],['Basil','green'],['Mint','green'],['Patchouli','green'],['Oakmoss','green'],['Moss','green'],['Hay','green'],['Mate','green'],
+    ['Musk','animalic'],['Leather','animalic'],['Ambergris','animalic'],['Civet','animalic'],['Castoreum','animalic'],
+    ['Tobacco','gourmand'],['Coffee','gourmand'],['Chocolate','gourmand'],['Cacao','gourmand'],['Honey','gourmand'],['Caramel','gourmand'],['Almond','gourmand'],['Rum','gourmand'],['Whiskey','gourmand'],
+    ['Marine','aquatic'],['Sea Salt','aquatic'],['Ozone','aquatic'],['Calone','aquatic'],['Seaweed','aquatic'],
+    ['Incense','other'],['Birch','other'],['Styrax','other'],['Suede','other'],['Cotton','other'],['Aldehydes','other'],['Iso E Super','other'],['Ambroxan','other'],['Timbersilk','other'],
+  ];
+  await db.execute('BEGIN');
+  try {
+    for (const [name, cat] of defaultNotes) {
+      await db.execute({ sql: 'INSERT OR IGNORE INTO notes (name, category) VALUES (?, ?)', args: [name, cat] });
+    }
+    await db.execute('COMMIT');
+    console.log('✓ Seeded default notes');
+  } catch (e) { await db.execute('ROLLBACK'); console.error('Note seed failed:', e.message); }
+}
 await db.execute(`CREATE TABLE IF NOT EXISTS product_images (
   id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL,
   data_url TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now'))

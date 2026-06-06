@@ -1336,6 +1336,8 @@ async function renderAdmin() {
   const orders = await api('/api/admin/orders').catch(() => []);
   const revenue = orders.reduce((s, o) => s + o.total, 0);
   const libImages = await api('/api/admin/images').catch(() => []);
+  const notes = await api('/api/admin/notes').catch(() => {});
+  state.notes = notes;
 
   $('#view').innerHTML = `
     <section class="section">
@@ -1364,10 +1366,25 @@ async function renderAdmin() {
         <div id="imgLibGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px">${libImages.map(img => `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer" class="lib-img" data-url="${img.data_url}"><img src="${img.data_url}" style="width:100%;height:70px;object-fit:contain;border-radius:4px;background:#0c0c0e"/><span style="font-size:10px;color:var(--muted);text-align:center;word-break:break-all;max-width:100%">${img.name}</span><button class="btn-sm" style="font-size:9px;padding:2px 6px;color:var(--muted-2)" data-del-lib="${img.id}">✕</button></div>`).join('')}</div>
       </div>
 
+      <div class="card-panel" id="noteLibPanel" style="display:none">
+        <h3>Note Library</h3>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <input id="noteName" placeholder="Note name (e.g. Bergamot)" style="flex:1;min-width:150px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:14px"/>
+          <select id="noteCategory" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px">
+            ${['citrus','fruity','floral','spicy','woody','amber/vanilla','green','animalic','gourmand','aquatic','other'].map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+          <button id="addNoteBtn" style="background:var(--gold);color:#000;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap">Add note</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">${Object.entries(Object.groupBy(notes, n => n.category)).map(([cat, ns]) => `<div style="flex:1;min-width:180px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted-2);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">${cat}</div>${ns.map(n => `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><span style="flex:1;font-size:12px">${n.name}</span><button class="btn-sm" style="font-size:9px;padding:1px 5px;color:var(--muted-2)" data-del-note="${n.id}">✕</button></div>`).join('')}</div>`).join('')}</div>
+      </div>
+
       <div class="card-panel">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
           <h3 style="margin:0">Add a new fragrance</h3>
-          <button type="button" id="toggleImgLib" style="background:none;border:1px solid var(--line);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:12px;white-space:nowrap">📷 Image Library</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" id="toggleImgLib" style="background:none;border:1px solid var(--line);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:12px;white-space:nowrap">📷 Images</button>
+            <button type="button" id="toggleNoteLib" style="background:none;border:1px solid var(--line);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:12px;white-space:nowrap">📓 Notes</button>
+          </div>
         </div>
         <div class="form-row-2">
           <div class="field"><span>Name</span><input id="n_name" placeholder="Sauvage EDP"/></div>
@@ -1568,6 +1585,29 @@ async function renderAdmin() {
     if (!confirm('Delete this image from library?')) return;
     try { await api('/api/admin/images/' + id, { method: 'DELETE' }); toast('Deleted'); renderAdmin(); } catch (e) { toast(e.message); }
   });
+  // Note library toggle
+  $('#toggleNoteLib').onclick = () => {
+    const p = $('#noteLibPanel');
+    p.style.display = p.style.display === 'none' ? '' : 'none';
+  };
+  // Note library add
+  $('#addNoteBtn').onclick = async () => {
+    const name = $('#noteName').value.trim();
+    const cat = $('#noteCategory').value;
+    if (!name) return toast('Enter a note name');
+    try {
+      await api('/api/admin/notes', { method: 'POST', body: { name, category: cat } });
+      toast('Note added');
+      renderAdmin();
+    } catch (e) { toast(e.message); }
+  };
+  // Note library delete
+  $$('[data-del-note]').forEach(b => b.onclick = async (e) => {
+    e.stopPropagation();
+    const id = +b.dataset.delNote;
+    if (!confirm('Delete this note?')) return;
+    try { await api('/api/admin/notes/' + id, { method: 'DELETE' }); toast('Deleted'); renderAdmin(); } catch (e) { toast(e.message); }
+  });
   // Click library image to copy URL
   $$('.lib-img').forEach(el => el.onclick = () => {
     const url = el.dataset.url;
@@ -1576,14 +1616,19 @@ async function renderAdmin() {
   });
   function renderNotePills(query) {
     const body = $('#notePickerBody');
-    const entries = Object.entries(COMMON_NOTES);
+    // Use state.notes (from DB) if available, otherwise fallback to COMMON_NOTES
+    const source = (state.notes || []).length ? state.notes : COMMON_NOTES;
+    const isArr = Array.isArray(source);
+    const entries = isArr
+      ? Object.entries(Object.groupBy(source, n => n.category || 'other'))
+      : Object.entries(source);
     const filtered = query
-      ? entries.map(([cat, notes]) => [cat, notes.filter(n => n.toLowerCase().includes(query.toLowerCase()))]).filter(([_, n]) => n.length)
+      ? entries.map(([cat, notes]) => [cat, notes.filter(n => isArr ? n.name.toLowerCase().includes(query.toLowerCase()) : n.toLowerCase().includes(query.toLowerCase()))]).filter(([_, n]) => n.length)
       : entries;
     body.innerHTML = filtered.map(([cat, notes]) => `
       <div style="margin-bottom:10px">
         <div style="font-size:10px;color:var(--muted-2);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">${cat}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px">${notes.map(n => `<button type="button" class="note-pill" data-note="${n}">${n}</button>`).join('')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${notes.map(n => `<button type="button" class="note-pill" data-note="${isArr ? n.name : n}">${isArr ? n.name : n}</button>`).join('')}</div>
       </div>`).join('');
     body.querySelectorAll('.note-pill').forEach(pill => pill.onclick = function() { this.classList.toggle('sel'); });
   }

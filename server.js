@@ -355,6 +355,43 @@ app.delete('/api/admin/images/:id', requireOwner, asyncHandler(async (req, res) 
   res.json({ ok: true });
 }));
 
+// ---------- notes management ----------
+app.get('/api/admin/notes', requireOwner, asyncHandler(async (_req, res) => {
+  const rows = (await db.execute('SELECT * FROM notes ORDER BY category ASC, name ASC')).rows;
+  res.json(rows);
+}));
+
+app.post('/api/admin/notes', requireOwner, asyncHandler(async (req, res) => {
+  const { name, category } = req.body || {};
+  if (!name || !category) return res.status(400).json({ error: 'Name and category required.' });
+  try {
+    const result = await db.execute({ sql: 'INSERT INTO notes (name, category) VALUES (?, ?)', args: [name.trim(), category.trim()] });
+    const row = (await db.execute({ sql: 'SELECT * FROM notes WHERE id = ?', args: [Number(result.lastInsertRowid)] })).rows[0];
+    await ghUpload().catch(() => {});
+    res.json(row);
+  } catch (e) {
+    if (e.message && e.message.includes('UNIQUE')) return res.status(409).json({ error: 'A note with that name already exists.' });
+    res.status(500).json({ error: e.message });
+  }
+}));
+
+app.put('/api/admin/notes/:id', requireOwner, asyncHandler(async (req, res) => {
+  const id = +req.params.id;
+  const n = (await db.execute({ sql: 'SELECT * FROM notes WHERE id = ?', args: [id] })).rows[0];
+  if (!n) return res.status(404).json({ error: 'Not found.' });
+  const { name, category } = req.body || {};
+  await db.execute({ sql: 'UPDATE notes SET name=?, category=? WHERE id=?', args: [name ?? n.name, category ?? n.category, id] });
+  const row = (await db.execute({ sql: 'SELECT * FROM notes WHERE id = ?', args: [id] })).rows[0];
+  await ghUpload().catch(() => {});
+  res.json(row);
+}));
+
+app.delete('/api/admin/notes/:id', requireOwner, asyncHandler(async (req, res) => {
+  await db.execute({ sql: 'DELETE FROM notes WHERE id = ?', args: [+req.params.id] });
+  await ghUpload().catch(() => {});
+  res.json({ ok: true });
+}));
+
 // Public — image library (no auth, used by product detail pages)
 app.get('/api/images', asyncHandler(async (_req, res) => {
   const rows = (await db.execute('SELECT id, name, data_url FROM product_images ORDER BY name ASC')).rows;
