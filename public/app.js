@@ -270,6 +270,7 @@ function route() {
   else if (v.startsWith('thanks')) renderThanks();
   else if (v.startsWith('pending')) renderPending();
   else if (v === 'contact') renderContact();
+  else if (v.startsWith('product')) renderProduct(parseInt(v.split('/')[1], 10));
   else renderShop();
   window.scrollTo(0, 0);
 }
@@ -394,7 +395,7 @@ function renderWishlist() {
     $$('[data-add]', g).forEach((b) => b.onclick = (e) => { e.stopPropagation(); addToCart(+b.dataset.add); });
     $$('[data-buy]', g).forEach((b) => b.onclick = (e) => { e.stopPropagation(); buyNow(+b.dataset.buy); });
     $$('[data-fav]', g).forEach((b) => b.onclick = (e) => { e.stopPropagation(); toggleWishlist(+b.dataset.fav); renderWishlist(); });
-    $$('[data-view]', g).forEach((el) => el.onclick = () => openQuickView(+el.dataset.view));
+    $$('[data-view]', g).forEach((el) => el.onclick = () => location.hash = '#product/' + el.dataset.view);
   }
 }
 
@@ -416,7 +417,7 @@ function cardHTML(p) {
   return `
     <article class="card">
       <button class="fav ${faved ? 'on' : ''}" data-fav="${p.id}" title="Save to favourites" aria-label="Favourite">${faved ? '♥' : '♡'}</button>
-      <div class="card-visual" data-view="${p.id}">${productVisual(p)}<span class="badge">${p.size || ''}</span><span class="quick">Quick view</span></div>
+      <div class="card-visual" data-view="${p.id}">${productVisual(p)}<span class="badge">${p.size || ''}</span><span class="quick">View</span></div>
       <div class="card-body">
         <span class="card-brand">${p.brand}</span>
         <h3 class="card-name">${p.name}</h3>
@@ -484,7 +485,7 @@ function renderGrid() {
   $$('[data-add]', grid).forEach((b) => b.onclick = (e) => { e.stopPropagation(); addToCart(+b.dataset.add); });
   $$('[data-buy]', grid).forEach((b) => b.onclick = (e) => { e.stopPropagation(); buyNow(+b.dataset.buy); });
   $$('[data-fav]', grid).forEach((b) => b.onclick = (e) => { e.stopPropagation(); toggleWishlist(+b.dataset.fav); b.classList.toggle('on'); b.textContent = b.classList.contains('on') ? '♥' : '♡'; });
-  $$('[data-view]', grid).forEach((el) => el.onclick = () => openQuickView(+el.dataset.view));
+  $$('[data-view]', grid).forEach((el) => el.onclick = () => location.hash = '#product/' + el.dataset.view);
 }
 
 // ---------- top navbar search dropdown ----------
@@ -512,7 +513,7 @@ function renderSearchResults() {
          <span class="sr-price">${euro(p.price)}</span></button>`).join('')
     : `<div class="sr-none">No matches</div>`;
   $$('[data-sr]', box).forEach((b) => b.onclick = () => {
-    openQuickView(+b.dataset.sr);
+    location.hash = '#product/' + b.dataset.sr;
     closeSearchPanel();
   });
 }
@@ -674,7 +675,7 @@ function renderShop() {
     openQuickView(pick.id);
   };
   // recently viewed items
-  $$('[data-recent]').forEach((el) => el.onclick = () => openQuickView(+el.dataset.recent));
+  $$('[data-recent]').forEach((el) => el.onclick = () => location.hash = '#product/' + el.dataset.recent);
 }
 
 // ---------- quick view modal ----------
@@ -701,7 +702,8 @@ function openQuickView(id) {
             <button class="btn-primary" id="qvBuy">Buy now</button>
           </div>
           <button class="qv-fav ${faved ? 'on' : ''}" id="qvFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
-          <button class="share-btn" id="qvShare"><span style="font-size:14px">↗</span> Share link</button>
+          <button class="share-btn" id="qvShare"><span style="font-size:14px">↗</span> Share</button>
+          <a href="#product/${p.id}" class="share-btn" style="color:var(--gold);font-size:13px;text-decoration:none;margin-top:2px" id="qvFullLink">View full details →</a>
         </div>
       </div>
     </div>`;
@@ -718,9 +720,9 @@ function openQuickView(id) {
     renderGrid();
   };
   $('#qvShare').onclick = () => {
-    const txt = `NOIR ATELIER — ${p.brand} ${p.name} — ${euro(p.price)}`;
+    const url = window.location.origin + window.location.pathname + '#product/' + p.id;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(txt).then(() => toast('Copied to clipboard!')).catch(() => toast('Could not copy'));
+      navigator.clipboard.writeText(url).then(() => toast('Link copied!')).catch(() => toast('Could not copy'));
     } else { toast('Could not copy'); }
   };
 }
@@ -759,6 +761,49 @@ function renderAbout() {
     </section>`;
 }
 
+
+// ---------- product detail page ----------
+function renderProduct(id) {
+  const p = state.products.find(x => x.id === id);
+  if (!p) { renderShop(); return; }
+  addRecent(id);
+  const faved = state.wishlist.includes(p.id);
+  $('#view').innerHTML = `
+    <section class="section product-page">
+      <a href="#shop" class="back-link">← Back to shop</a>
+      <div class="product-layout">
+        <div class="product-visual">${productVisual(p)}</div>
+        <div class="product-info">
+          <span class="card-brand">${p.brand}</span>
+          <h1>${p.name}</h1>
+          <div class="product-notes">${p.notes || ''}</div>
+          <p class="product-desc">${p.description || 'A distinguished fragrance from our curated collection.'}</p>
+          <div class="product-meta"><span>${p.size || ''}</span>${p.stock > 0 ? '<span class="in-stock">In stock</span>' : '<span class="oos">Sold out</span>'}</div>
+          <div class="product-price">${euro(p.price)}</div>
+          <div class="product-actions">
+            <button class="btn-primary" id="pAdd">Add to cart</button>
+            <button class="btn-primary" id="pBuy">Buy now</button>
+          </div>
+          <button class="product-fav ${faved ? 'on' : ''}" id="pFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
+          <button class="product-share" id="pShare"><span style="font-size:14px">↗</span> Share</button>
+        </div>
+      </div>
+    </section>`;
+  $('#pAdd').onclick = () => { addToCart(id); };
+  $('#pBuy').onclick = () => { buyNow(id); };
+  $('#pFav').onclick = () => {
+    toggleWishlist(id);
+    const on = state.wishlist.includes(id);
+    $('#pFav').classList.toggle('on', on);
+    $('#pFav').textContent = on ? '♥ Saved' : '♡ Save to favourites';
+  };
+  $('#pShare').onclick = () => {
+    const url = window.location.origin + window.location.pathname + '#product/' + id;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => toast('Link copied!')).catch(() => toast('Could not copy'));
+    } else { toast('Could not copy'); }
+  };
+}
 
 // ---------- contact ----------
 function renderContact() {

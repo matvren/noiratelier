@@ -767,3 +767,34 @@ input:-webkit-autofill:hover{
 /* share button */
 .share-btn{background:none;border:none;color:var(--muted);font-size:13px;text-align:left;padding:6px 0;transition:.2s;cursor:pointer;display:flex;align-items:center;gap:6px}
 .share-btn:hover{color:var(--gold)}
+
+/* product detail page */
+.product-page{max-width:1000px;margin:0 auto}
+.back-link{display:inline-block;color:var(--muted);font-size:13px;margin-bottom:24px;transition:.2s}
+.back-link:hover{color:var(--gold)}
+.product-layout{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+.product-visual{background:radial-gradient(ellipse at 50% 40%,#1a1a1d,#0b0b0c);border-radius:var(--radius);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:40px;min-height:400px}
+.product-visual .card-img{max-height:340px}
+.product-visual .bottle{width:64px;height:140px}
+.product-info{display:flex;flex-direction:column}
+.product-info h1{font-family:var(--serif);font-size:36px;font-weight:500;line-height:1.1;margin:6px 0 14px}
+.product-notes{color:var(--muted-2);font-size:14px;letter-spacing:.5px;margin-bottom:16px}
+.product-desc{color:var(--muted);font-size:15px;line-height:1.7;margin-bottom:24px}
+.product-meta{display:flex;gap:16px;align-items:center;margin-bottom:20px;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--muted-2)}
+.product-meta .in-stock{color:#6fae7e}
+.product-meta .oos{color:#d66}
+.product-price{font-size:32px;font-weight:500;margin-bottom:28px}
+.product-actions{display:flex;gap:12px;margin-bottom:18px}
+.product-actions .btn-primary{width:auto;flex:1;max-width:none;margin:0}
+.product-actions .btn-primary#pAdd{background:transparent;border:1px solid var(--line);color:var(--text)}
+.product-actions .btn-primary#pAdd:hover{border-color:var(--gold);color:var(--gold);background:transparent;transform:none}
+.product-fav{background:none;border:none;color:var(--muted);font-size:14px;text-align:left;padding:6px 0;transition:.2s;cursor:pointer}
+.product-fav:hover,.product-fav.on{color:var(--gold)}
+.product-share{background:none;border:none;color:var(--muted-2);font-size:13px;text-align:left;padding:6px 0;transition:.2s;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:4px}
+.product-share:hover{color:var(--gold)}
+@media(max-width:720px){
+  .product-layout{grid-template-columns:1fr;gap:24px}
+  .product-visual{min-height:260px}
+  .product-info h1{font-size:28px}
+  .product-price{font-size:26px}
+}
