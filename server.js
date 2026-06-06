@@ -355,6 +355,12 @@ app.delete('/api/admin/images/:id', requireOwner, asyncHandler(async (req, res) 
   res.json({ ok: true });
 }));
 
+// Public — image library (no auth, used by product detail pages)
+app.get('/api/images', asyncHandler(async (_req, res) => {
+  const rows = (await db.execute('SELECT id, name, data_url FROM product_images ORDER BY name ASC')).rows;
+  res.json(rows);
+}));
+
 // ---------- cart ----------
 async function getCart(userId) {
   return (await db.execute({

@@ -143,6 +143,8 @@ async function init() {
     state.loadingProducts = true;
     state.products = await api('/api/products');
     state.loadingProducts = false;
+    // load note images library for product detail page
+    try { state.noteImages = Object.fromEntries((await api('/api/images')).map(img => [img.name.toLowerCase(), img.data_url])); } catch (e) { state.noteImages = {}; }
   } catch (err) {
     console.warn('Could not load products, showing empty catalogue:', err && err.message ? err.message : err);
     state.products = [];
@@ -782,6 +784,16 @@ function renderProduct(id) {
   if (!p) { renderShop(); return; }
   addRecent(id);
   const faved = state.wishlist.includes(p.id);
+  const noteImages = state.noteImages || {};
+  function pyramidNotes(raw) {
+    if (!raw) return '';
+    return raw.split('·').map(n => {
+      const t = n.trim();
+      if (!t) return '';
+      const img = noteImages[t.toLowerCase()];
+      return img ? `<span class="note-with-img"><span class="note-name">${t}</span><img src="${img}" class="note-img-icon"/></span>` : `<span class="note-name">${t}</span>`;
+    }).join('');
+  }
   $('#view').innerHTML = `
     <section class="section product-page">
       <a href="#shop" class="back-link">← Back to shop</a>
@@ -800,7 +812,7 @@ function renderProduct(id) {
           </div>
           <button class="product-fav ${faved ? 'on' : ''}" id="pFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
           <button class="product-share" id="pShare"><span style="font-size:14px">↗</span> Share</button>
-          ${(p.note_top || p.note_mid || p.note_base) ? `<div class="frag-pyramid"><h4 class="frag-head">Fragrance notes</h4>${[['top', p.note_top], ['middle', p.note_mid], ['base', p.note_base]].filter(([,v]) => v).map(([l, v]) => `<div class="frag-level"><span class="frag-level-label">${l}</span><span class="frag-level-notes">${v}</span></div>`).join('')}</div>` : ''}
+          ${(p.note_top || p.note_mid || p.note_base) ? `<div class="frag-pyramid"><h4 class="frag-head">Fragrance notes</h4>${[['top', p.note_top], ['middle', p.note_mid], ['base', p.note_base]].filter(([,v]) => v).map(([l, v]) => `<div class="frag-level"><span class="frag-level-label">${l}</span><div class="frag-level-notes">${pyramidNotes(v)}</div></div>`).join('')}</div>` : ''}
         </div>
       </div>
     </section>`;
