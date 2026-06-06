@@ -303,9 +303,6 @@ app.post('/api/admin/products/:id/image', requireOwner, asyncHandler(async (req,
 }));
 
 app.post('/api/admin/products/:id/image-url', requireOwner, asyncHandler(async (req, res) => {
-
-// owner: import an image by URL. Stores the URL directly (no local file).
-app.post('/api/admin/products/:id/image-url', requireOwner, asyncHandler(async (req, res) => {
   const id = +req.params.id;
   const p = (await db.execute({ sql: 'SELECT id FROM products WHERE id = ?', args: [id] })).rows[0];
   if (!p) return res.status(404).json({ error: 'Product not found.' });
