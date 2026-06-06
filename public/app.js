@@ -556,12 +556,12 @@ function renderRecentStrip() {
 }
 function renderTestimonials() {
   const list = [
-    { text: "Absolute game changer. The quality is unreal — I've never experienced anything like it.", name: "Alex M.", role: "Verified buyer" },
-    { text: "My new signature scent. I get stopped in the street and asked what I'm wearing.", name: "Jamie K.", role: "Verified buyer" },
-    { text: "Beautifully curated. Every bottle tells a story. My third order and certainly not my last.", name: "Sam T.", role: "Verified buyer" },
-    { text: "The shipping was discreet and fast, the presentation was stunning, and the fragrance is even better than I expected.", name: "Morgan L.", role: "Verified buyer" },
-    { text: "I was hesitant buying fragrance online but the authentication guarantee put me at ease. Genuine product, great price.", name: "Casey R.", role: "Verified buyer" },
-    { text: "A hidden gem. The curation is impeccable — each scent in my collection has become a talking point.", name: "Jordan P.", role: "Verified buyer" },
+    { text: "The quality is insane for the price. Smells 1:1 to the real thing, no one can tell the difference.", name: "Alex M.", role: "Replica buyer" },
+    { text: "My friends keep asking what I'm wearing — they can't believe it's a rep. Best decision I've made.", name: "Jamie K.", role: "Replica buyer" },
+    { text: "Third order already. The accuracy is incredible — same scent profile, fraction of the cost.", name: "Sam T.", role: "Replica buyer" },
+    { text: "Shipping was fast and packaging was solid. The juice is spot on. Will definitely order again.", name: "Morgan L.", role: "Replica buyer" },
+    { text: "I was sceptical at first but these are genuinely impressive. Longevity is great and the scent is dead on.", name: "Casey R.", role: "Replica buyer" },
+    { text: "This is the best rep fragrance store I've found. Every bottle has been consistent and high quality.", name: "Jordan P.", role: "Replica buyer" },
   ];
   return `<section class="section testimonials"><h2 class="test-head">What our customers say</h2><div class="test-grid">${list.map(t => `<div class="test-card"><div class="test-stars">★★★★★</div><p class="test-text">"${t.text}"</p><div class="test-author"><span class="test-name">${t.name}</span><span class="test-role">${t.role}</span></div></div>`).join('')}</div></section>`;
 }
