@@ -1490,6 +1490,7 @@ async function renderAdmin() {
       if (!product.image) thumb.style.background = `linear-gradient(160deg,${product.accent || '#b8975a'},#0c0c0e)`;
       busy(false);
       toast('Image saved ✓');
+      api('/api/admin/save', { method: 'POST' }).catch(() => {});
     }
     async function uploadFile(file) {
       if (!file) return;
