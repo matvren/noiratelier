@@ -395,7 +395,7 @@ function renderWishlist() {
     $$('[data-add]', g).forEach((b) => b.onclick = (e) => { e.stopPropagation(); addToCart(+b.dataset.add); });
     $$('[data-buy]', g).forEach((b) => b.onclick = (e) => { e.stopPropagation(); buyNow(+b.dataset.buy); });
     $$('[data-fav]', g).forEach((b) => b.onclick = (e) => { e.stopPropagation(); toggleWishlist(+b.dataset.fav); renderWishlist(); });
-    $$('[data-view]', g).forEach((el) => el.onclick = () => location.hash = '#product/' + el.dataset.view);
+    $$('[data-view]', g).forEach((el) => el.onclick = () => openQuickView(+el.dataset.view));
   }
 }
 
@@ -417,7 +417,7 @@ function cardHTML(p) {
   return `
     <article class="card">
       <button class="fav ${faved ? 'on' : ''}" data-fav="${p.id}" title="Save to favourites" aria-label="Favourite">${faved ? '♥' : '♡'}</button>
-      <div class="card-visual" data-view="${p.id}">${productVisual(p)}<span class="badge">${p.size || ''}</span><span class="quick">View</span></div>
+      <div class="card-visual" data-view="${p.id}">${productVisual(p)}<span class="badge">${p.size || ''}</span><span class="quick">Quick view</span></div>
       <div class="card-body">
         <span class="card-brand">${p.brand}</span>
         <h3 class="card-name">${p.name}</h3>
@@ -485,7 +485,7 @@ function renderGrid() {
   $$('[data-add]', grid).forEach((b) => b.onclick = (e) => { e.stopPropagation(); addToCart(+b.dataset.add); });
   $$('[data-buy]', grid).forEach((b) => b.onclick = (e) => { e.stopPropagation(); buyNow(+b.dataset.buy); });
   $$('[data-fav]', grid).forEach((b) => b.onclick = (e) => { e.stopPropagation(); toggleWishlist(+b.dataset.fav); b.classList.toggle('on'); b.textContent = b.classList.contains('on') ? '♥' : '♡'; });
-  $$('[data-view]', grid).forEach((el) => el.onclick = () => location.hash = '#product/' + el.dataset.view);
+  $$('[data-view]', grid).forEach((el) => el.onclick = () => openQuickView(+el.dataset.view));
 }
 
 // ---------- top navbar search dropdown ----------
