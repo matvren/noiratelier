@@ -45,12 +45,14 @@ async function ghDownload() {
   return -1;
 }
 
+let _uploading = false;
 export async function ghUpload() {
   if (!GITHUB_TOKEN) return { ok: false, error: 'No GITHUB_TOKEN set' };
+  if (_uploading) return { ok: true, skipped: true };
+  _uploading = true;
   try {
-    // Force SQLite to flush all pending writes to the file before we snapshot it
-    try { db.execute('COMMIT'); } catch (e) { /* no open transaction */ }
-    db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+    try { await db.execute('COMMIT'); } catch (e) { /* no open transaction */ }
+    await db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
     const content = fs.readFileSync(DB_PATH).toString('base64');
     const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`;
     const getRes = await fetch(url + `?ref=${GH_BRANCH}`, {
@@ -70,6 +72,8 @@ export async function ghUpload() {
     return { ok: false, error: `GitHub ${putRes.status}: ${t.slice(0, 200)}` };
   } catch (e) {
     return { ok: false, error: e.message };
+  } finally {
+    _uploading = false;
   }
 }
 
