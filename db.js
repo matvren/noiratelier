@@ -45,14 +45,11 @@ async function ghDownload() {
   return -1;
 }
 
-let _uploading = false;
 export async function ghUpload() {
   if (!GITHUB_TOKEN) return { ok: false, error: 'No GITHUB_TOKEN set' };
-  if (_uploading) return { ok: true, skipped: true };
-  _uploading = true;
   try {
-    try { await db.execute('COMMIT'); } catch (e) { /* no open transaction */ }
-    await db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+    try { db.execute('COMMIT'); } catch (e) { /* no open transaction */ }
+    db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
     const content = fs.readFileSync(DB_PATH).toString('base64');
     const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/noir.db`;
     const getRes = await fetch(url + `?ref=${GH_BRANCH}`, {
@@ -68,12 +65,25 @@ export async function ghUpload() {
       ghSha = (await putRes.json()).content.sha;
       return { ok: true };
     }
+    if (putRes.status === 409) {
+      // sha conflict — re-fetch sha and retry once
+      const getRes2 = await fetch(url + `?ref=${GH_BRANCH}`, {
+        headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' }
+      });
+      if (getRes2.ok) ghSha = (await getRes2.json()).sha;
+      const putRes2 = await fetch(url, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'save noir.db', content, sha: ghSha, branch: GH_BRANCH }),
+      });
+      if (putRes2.ok) { ghSha = (await putRes2.json()).content.sha; return { ok: true }; }
+      const t2 = await putRes2.text();
+      return { ok: false, error: `GitHub 409 retry: ${putRes2.status}: ${t2.slice(0, 200)}` };
+    }
     const t = await putRes.text();
     return { ok: false, error: `GitHub ${putRes.status}: ${t.slice(0, 200)}` };
   } catch (e) {
     return { ok: false, error: e.message };
-  } finally {
-    _uploading = false;
   }
 }
 

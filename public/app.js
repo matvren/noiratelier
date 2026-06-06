@@ -1448,6 +1448,7 @@ async function renderAdmin() {
       $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = '';
       clearNewImg();
       toast('Fragrance added');
+      api('/api/admin/save', { method: 'POST' }).catch(() => {});
     } catch (e) { toast(e.message); }
   };
 
@@ -1465,6 +1466,7 @@ async function renderAdmin() {
         const updated = await api('/api/admin/products/' + id, { method: 'PUT', body });
         state.products = state.products.map(p => p.id == id ? updated : p);
         toast('Saved ✓');
+        api('/api/admin/save', { method: 'POST' }).catch(() => {});
       } catch (e) { toast(e.message); }
     };
     tr.querySelector('.del').onclick = async () => {
@@ -1473,6 +1475,7 @@ async function renderAdmin() {
       tr.remove();
       state.products = state.products.filter(p => p.id != id);
       toast('Deleted');
+      api('/api/admin/save', { method: 'POST' }).catch(() => {});
     };
     // image upload handlers (same as below)
     const fileIn = tr.querySelector('.file-in');
