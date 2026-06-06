@@ -1486,11 +1486,21 @@ async function renderAdmin() {
   const imgLibName = $('#imgLibName');
   async function saveLibImage(dataUrl, name) {
     if (!name) return toast('Enter a name for the image');
+    // Optimistically add to grid immediately
+    const grid = $('#imgLibGrid');
+    if (grid) {
+      const card = document.createElement('div');
+      card.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;opacity:.5';
+      card.innerHTML = `<img src="${dataUrl}" style="width:100%;height:70px;object-fit:contain;border-radius:4px;background:#0c0c0e"/><span style="font-size:10px;color:var(--muted);text-align:center;word-break:break-all;max-width:100%">${name}</span><span style="font-size:9px;color:var(--muted-2)">saving…</span>`;
+      grid.appendChild(card);
+    }
+    const imgLibBtn = $('#addLibBtn');
+    if (imgLibBtn) { imgLibBtn.textContent = 'Saving…'; imgLibBtn.disabled = true; }
     try {
       await api('/api/admin/images', { method: 'POST', body: { name, data_url: dataUrl } });
       toast('Image saved');
       renderAdmin();
-    } catch (e) { toast(e.message); }
+    } catch (e) { toast(e.message); renderAdmin(); }
   }
   async function handleLibFile(f) {
     if (!f) return;
@@ -1739,6 +1749,7 @@ async function renderAdmin() {
       price: Math.round(parseFloat($('#n_price').value || '0') * 100),
     };
     if (!body.name || !body.brand || !body.price) return toast('Name, brand and price required');
+    const addBtn = $('#addProduct'); addBtn.textContent = 'Adding…'; addBtn.disabled = true;
     try {
       const p = await api('/api/admin/products', { method: 'POST', body });
       if (_newImgDataUrl) {
@@ -1751,13 +1762,15 @@ async function renderAdmin() {
       renderAdminTable(fresh);
       $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = ''; $('#n_top').value = ''; $('#n_mid').value = ''; $('#n_base').value = '';
       clearNewImg();
+      $('#addProduct').textContent = 'Add fragrance'; $('#addProduct').disabled = false;
       toast('Fragrance added');
-    } catch (e) { toast(e.message); }
+    } catch (e) { $('#addProduct').textContent = 'Add fragrance'; $('#addProduct').disabled = false; toast(e.message); }
   };
 
   function bindRow(tr) {
     const id = tr.dataset.id;
-    tr.querySelector('.save').onclick = async () => {
+    const saveBtn = tr.querySelector('.save');
+    saveBtn.onclick = async () => {
       const body = {};
       tr.querySelectorAll('input[data-f]').forEach((i) => {
         const f = i.dataset.f;
@@ -1765,11 +1778,13 @@ async function renderAdmin() {
         else if (f === 'stock') body.stock = parseInt(i.value || '0', 10) || 0;
         else body[f] = i.value;
       });
+      saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
       try {
         const updated = await api('/api/admin/products/' + id, { method: 'PUT', body });
         state.products = state.products.map(p => p.id == id ? updated : p);
-        toast('Saved ✓');
-      } catch (e) { toast(e.message); }
+        saveBtn.textContent = 'Saved ✓'; saveBtn.disabled = true;
+        setTimeout(() => { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }, 1500);
+      } catch (e) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; toast(e.message); }
     };
     tr.querySelector('.del').onclick = async () => {
       if (!confirm('Delete this fragrance?')) return;
