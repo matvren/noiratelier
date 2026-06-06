@@ -13,6 +13,7 @@ const state = {
   brand: 'all',       // active brand filter
   sort: 'featured',   // sort mode
   wishlist: [],       // saved favourite product ids (localStorage)
+  recent: [],          // recently viewed product ids (localStorage, max 5)
 };
 // admin poll id for updating pending orders badge
 let _adminPollId = null;
@@ -80,6 +81,17 @@ function updateWishCount() {
   if (el) el.textContent = state.wishlist.length;
 }
 
+// ---------- recently viewed (localStorage) ----------
+const RECENT_KEY = 'noir_recent';
+function loadRecent() {
+  try { state.recent = JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch { state.recent = []; }
+}
+function saveRecent() { localStorage.setItem(RECENT_KEY, JSON.stringify(state.recent)); }
+function addRecent(id) {
+  state.recent = [id, ...state.recent.filter(x => x !== id)].slice(0, 5);
+  saveRecent();
+}
+
 function activeCart() {
   if (state.user) return state.cart;
   // hydrate guest cart with product data
@@ -94,6 +106,7 @@ async function init() {
   $('#year').textContent = new Date().getFullYear();
   loadGuest();
   loadWishlist();
+  loadRecent();
   // measure scrollbar width early so we don't cause a layout shift later
   try {
     const div = document.createElement('div');
@@ -239,7 +252,11 @@ function syncAuthUI() {
 
 function updateCartCount() {
   const n = activeCart().reduce((s, i) => s + i.qty, 0);
-  $('#cartCount').textContent = n;
+  const el = $('#cartCount');
+  el.textContent = n;
+  el.classList.remove('cart-bounce');
+  void el.offsetHeight;
+  el.classList.add('cart-bounce');
 }
 
 // ---------- routing ----------
@@ -531,6 +548,24 @@ const SORT_LABELS = {
   newest: 'Newest',
 };
 
+function renderRecentStrip() {
+  if (!state.recent.length) return '';
+  const items = state.recent.map(id => state.products.find(p => p.id === id)).filter(Boolean);
+  if (!items.length) return '';
+  return `<div class="recent-strip"><div class="recent-head">Recently viewed</div><div class="recent-items">${items.map(p => `<button class="recent-item" data-recent="${p.id}"><span class="recent-thumb" style="background:${p.image ? `url('${p.image}') center/contain no-repeat #0c0c0e` : `linear-gradient(160deg,${p.accent},#0c0c0e)`}"></span><span class="recent-name">${p.name}</span></button>`).join('')}</div></div>`;
+}
+function renderTestimonials() {
+  const list = [
+    { text: "Absolute game changer. The quality is unreal — I've never experienced anything like it.", name: "Alex M.", role: "Verified buyer" },
+    { text: "My new signature scent. I get stopped in the street and asked what I'm wearing.", name: "Jamie K.", role: "Verified buyer" },
+    { text: "Beautifully curated. Every bottle tells a story. My third order and certainly not my last.", name: "Sam T.", role: "Verified buyer" },
+    { text: "The shipping was discreet and fast, the presentation was stunning, and the fragrance is even better than I expected.", name: "Morgan L.", role: "Verified buyer" },
+    { text: "I was hesitant buying fragrance online but the authentication guarantee put me at ease. Genuine product, great price.", name: "Casey R.", role: "Verified buyer" },
+    { text: "A hidden gem. The curation is impeccable — each scent in my collection has become a talking point.", name: "Jordan P.", role: "Verified buyer" },
+  ];
+  return `<section class="section testimonials"><h2 class="test-head">What our customers say</h2><div class="test-grid">${list.map(t => `<div class="test-card"><div class="test-stars">★★★★★</div><p class="test-text">"${t.text}"</p><div class="test-author"><span class="test-name">${t.name}</span><span class="test-role">${t.role}</span></div></div>`).join('')}</div></section>`;
+}
+
 function renderShop() {
   const activeLabel = state.brand !== 'all'
     ? state.brand
@@ -541,8 +576,13 @@ function renderShop() {
       <div class="eyebrow">Designer & Niche · Curated</div>
       <h1>The art of <em>scent</em>,<br/>refined to its essence.</h1>
       <p>A quiet edit of the world's compelling fragrances — authenticated, beautifully kept, and shipped with care.</p>
-      <a href="#shop" class="btn-primary" id="exploreBtn">Explore the collection</a>
+      <div class="hero-actions">
+        <a href="#shop" class="btn-primary" id="exploreBtn">Explore the collection</a>
+        <button type="button" class="btn-minimal secondary" id="surpriseBtn">Surprise Me</button>
+      </div>
     </section>
+    ${renderRecentStrip()}
+    ${renderTestimonials()}
     <section class="section" id="shop">
       <div class="section-head">
         <div>
@@ -625,10 +665,21 @@ function renderShop() {
     hInp.onkeydown = (e) => { if (e.key === 'Enter') { state.query = searchTempQuery.trim(); updateSearchLabel(); renderShop(); } };
   }
   const hBtn = $('#heroSearchBtn'); if (hBtn) hBtn.onclick = () => { state.query = (searchTempQuery || '').trim(); updateSearchLabel(); renderShop(); };
+  // Surprise Me
+  const surpriseBtn = $('#surpriseBtn');
+  if (surpriseBtn) surpriseBtn.onclick = () => {
+    const items = state.products.filter(p => p.active !== 0 && p.stock > 0);
+    if (!items.length) return toast('No products available');
+    const pick = items[Math.floor(Math.random() * items.length)];
+    openQuickView(pick.id);
+  };
+  // recently viewed items
+  $$('[data-recent]').forEach((el) => el.onclick = () => openQuickView(+el.dataset.recent));
 }
 
 // ---------- quick view modal ----------
 function openQuickView(id) {
+  addRecent(id);
   const p = state.products.find((x) => x.id === id);
   if (!p) return;
   const faved = state.wishlist.includes(p.id);
@@ -650,6 +701,7 @@ function openQuickView(id) {
             <button class="btn-primary" id="qvBuy">Buy now</button>
           </div>
           <button class="qv-fav ${faved ? 'on' : ''}" id="qvFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
+          <button class="share-btn" id="qvShare"><span style="font-size:14px">↗</span> Share link</button>
         </div>
       </div>
     </div>`;
@@ -664,6 +716,12 @@ function openQuickView(id) {
     $('#qvFav').classList.toggle('on', on);
     $('#qvFav').textContent = on ? '♥ Saved' : '♡ Save to favourites';
     renderGrid();
+  };
+  $('#qvShare').onclick = () => {
+    const url = window.location.origin + window.location.pathname + '?product=' + p.id;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => toast('Link copied!')).catch(() => toast('Could not copy'));
+    } else { toast('Could not copy link'); }
   };
 }
 function closeQuickView() { const w = $('#quickModal'); if (w) { w.hidden = true; w.innerHTML = ''; } }
@@ -1657,6 +1715,15 @@ function bindGlobal() {
   // auth button in mobile menu: close menu then open auth / logout
   $('#authBtnMob').onclick = () => { closeMenu(); setTimeout(() => { state.user ? logout() : openAuth('login'); }, 150); };
   window.addEventListener('hashchange', route);
+  // scroll to top button
+  const st = document.createElement('button');
+  st.className = 'scroll-top';
+  st.id = 'scrollTop';
+  st.textContent = '↑';
+  st.setAttribute('aria-label', 'Scroll to top');
+  document.body.appendChild(st);
+  st.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.addEventListener('scroll', () => st.classList.toggle('show', window.scrollY > 300), { passive: true });
 }
 
 init();
