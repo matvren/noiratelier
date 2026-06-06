@@ -787,7 +787,7 @@ function renderProduct(id) {
           </div>
           <button class="product-fav ${faved ? 'on' : ''}" id="pFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
           <button class="product-share" id="pShare"><span style="font-size:14px">↗</span> Share</button>
-          <a class="product-share" href="https://www.fragrantica.com/search/?q=${encodeURIComponent(p.brand + ' ' + p.name)}" target="_blank" rel="noopener" style="margin-top:0"><span style="font-size:14px">📋</span> Notes & reviews on Fragrantica</a>
+          <div class="fragrantica-notes" id="fragNotes"><div class="frag-loading">Loading notes…</div></div>
         </div>
       </div>
     </section>`;
@@ -805,6 +805,25 @@ function renderProduct(id) {
       navigator.clipboard.writeText(url).then(() => toast('Link copied!')).catch(() => toast('Could not copy'));
     } else { toast('Could not copy'); }
   };
+  // Fetch Fragrantica notes
+  (async () => {
+    const el = $('#fragNotes');
+    try {
+      const data = await api('/api/fragrantica/' + id);
+      if (data && data.notes) {
+        const hasNotes = data.notes.top?.length || data.notes.heart?.length || data.notes.base?.length;
+        if (hasNotes) {
+          el.innerHTML = `<div class="frag-pyramid"><h4 class="frag-head">Fragrance notes</h4>${['top','heart','base'].map(level => data.notes[level]?.length ? `<div class="frag-level"><span class="frag-level-label">${level}</span><span class="frag-level-notes">${data.notes[level].join(' · ')}</span></div>` : '').join('')}</div>`;
+        } else {
+          el.innerHTML = '';
+        }
+      } else {
+        el.innerHTML = '';
+      }
+    } catch (e) {
+      el.innerHTML = '';
+    }
+  })();
 }
 
 // ---------- contact ----------

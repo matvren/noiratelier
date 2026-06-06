@@ -321,6 +321,77 @@ app.post('/api/admin/save', requireOwner, asyncHandler(async (_req, res) => {
   else res.status(500).json({ error: result.error });
 }));
 
+// ---------- fragrantica proxy ----------
+app.get('/api/fragrantica/:id', asyncHandler(async (req, res) => {
+  const id = +req.params.id;
+  const p = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
+  if (!p) return res.status(404).json({ error: 'Not found' });
+
+  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+  // Helper: extract notes from HTML
+  function extractNotes(html) {
+    const notes = { top: [], heart: [], base: [] };
+    // Try to find the pyramid section
+    const pyr = html.match(/<div[^>]*class="[^"]*pyramid[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/i);
+    const section = pyr ? pyr[1] : html;
+    // Extract note pills/links — Fragrantica uses <a> tags with note names
+    const allNotes = [...section.matchAll(/<a[^>]*>([^<]+)<\/a>/g)].map(m => m[1].trim()).filter(Boolean);
+    if (allNotes.length) {
+      // Try to split into thirds for top/heart/base
+      const third = Math.ceil(allNotes.length / 3);
+      notes.top = allNotes.slice(0, third);
+      notes.heart = allNotes.slice(third, third * 2);
+      notes.base = allNotes.slice(third * 2);
+      return notes;
+    }
+    // Fallback: just grab any note-like text near "notes" headings
+    const lines = [...section.matchAll(/(?:Top|Heart|Middle|Base)\s*Notes?[^]*?<\/div>/gi)].map(m => m[0]);
+    if (lines.length) {
+      lines.forEach(line => {
+        const items = [...line.matchAll(/<a[^>]*>([^<]+)<\/a>/g)].map(m => m[1].trim()).filter(Boolean);
+        if (/top/i.test(line)) notes.top.push(...items);
+        else if (/heart|middle/i.test(line)) notes.heart.push(...items);
+        else if (/base/i.test(line)) notes.base.push(...items);
+      });
+      return notes;
+    }
+    return null;
+  }
+
+  async function fetchPage(url) {
+    const res = await fetch(url, { headers: { 'User-Agent': ua, 'Accept': 'text/html' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  }
+
+  // If product has a known fragrantica_url, use it directly
+  if (p.fragrantica_url) {
+    try {
+      const html = await fetchPage(p.fragrantica_url);
+      const notes = extractNotes(html);
+      if (notes) return res.json({ notes, url: p.fragrantica_url });
+    } catch (e) { /* fall through to search */ }
+  }
+
+  // Search Fragrantica
+  try {
+    const q = encodeURIComponent(`${p.brand} ${p.name} perfume`);
+    const html = await fetchPage(`https://www.fragrantica.com/search/?q=${q}`);
+    const link = html.match(/<a[^>]*href="(\/[^"]*perfume[^"]*)"[^>]*>/i);
+    if (!link) return res.json({ notes: null, error: 'Not found on Fragrantica' });
+
+    const fragUrl = `https://www.fragrantica.com${link[1]}`;
+    const pageHtml = await fetchPage(fragUrl);
+    const notes = extractNotes(pageHtml);
+    if (notes) return res.json({ notes, url: fragUrl });
+
+    res.json({ notes: null, url: fragUrl, error: 'Could not parse notes' });
+  } catch (e) {
+    res.json({ notes: null, error: e.message });
+  }
+}));
+
 // ---------- cart ----------
 async function getCart(userId) {
   return (await db.execute({

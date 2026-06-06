@@ -126,6 +126,7 @@ await db.execute(`CREATE TABLE IF NOT EXISTS orders (
 // safe migrations
 const pcols = (await db.execute("PRAGMA table_info(products)")).rows.map(c => c.name);
 if (!pcols.includes('image')) await db.execute("ALTER TABLE products ADD COLUMN image TEXT DEFAULT ''");
+if (!pcols.includes('fragrantica_url')) await db.execute("ALTER TABLE products ADD COLUMN fragrantica_url TEXT DEFAULT ''");
 const ocols = (await db.execute("PRAGMA table_info(orders)")).rows.map(c => c.name);
 for (const col of ['shipping_name','shipping_address','shipping_city','shipping_postcode','shipping_country','shipping_phone']) {
   if (!ocols.includes(col)) await db.execute(`ALTER TABLE orders ADD COLUMN ${col} TEXT DEFAULT ''`);
