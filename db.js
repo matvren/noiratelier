@@ -127,9 +127,9 @@ await db.execute(`CREATE TABLE IF NOT EXISTS orders (
 const pcols = (await db.execute("PRAGMA table_info(products)")).rows.map(c => c.name);
 if (!pcols.includes('image')) await db.execute("ALTER TABLE products ADD COLUMN image TEXT DEFAULT ''");
 if (!pcols.includes('fragrantica_url')) await db.execute("ALTER TABLE products ADD COLUMN fragrantica_url TEXT DEFAULT ''");
-if (!pcols.includes('note_top')) await db.execute("ALTER TABLE products ADD COLUMN note_top TEXT DEFAULT ''");
-if (!pcols.includes('note_mid')) await db.execute("ALTER TABLE products ADD COLUMN note_mid TEXT DEFAULT ''");
-if (!pcols.includes('note_base')) await db.execute("ALTER TABLE products ADD COLUMN note_base TEXT DEFAULT ''");
+try { if (!pcols.includes('note_top')) await db.execute("ALTER TABLE products ADD COLUMN note_top TEXT DEFAULT ''"); } catch (e) { console.warn('note_top migration:', e.message); }
+try { if (!pcols.includes('note_mid')) await db.execute("ALTER TABLE products ADD COLUMN note_mid TEXT DEFAULT ''"); } catch (e) { console.warn('note_mid migration:', e.message); }
+try { if (!pcols.includes('note_base')) await db.execute("ALTER TABLE products ADD COLUMN note_base TEXT DEFAULT ''"); } catch (e) { console.warn('note_base migration:', e.message); }
 const ocols = (await db.execute("PRAGMA table_info(orders)")).rows.map(c => c.name);
 for (const col of ['shipping_name','shipping_address','shipping_city','shipping_postcode','shipping_country','shipping_phone']) {
   if (!ocols.includes(col)) await db.execute(`ALTER TABLE orders ADD COLUMN ${col} TEXT DEFAULT ''`);
