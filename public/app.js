@@ -703,7 +703,7 @@ function openQuickView(id) {
           </div>
           <button class="qv-fav ${faved ? 'on' : ''}" id="qvFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
           <button class="share-btn" id="qvShare"><span style="font-size:14px">↗</span> Share</button>
-          <a href="#product/${p.id}" class="share-btn" style="color:var(--gold);font-size:13px;text-decoration:none;margin-top:2px" id="qvFullLink">View full details →</a>
+          <button class="share-btn" style="color:var(--gold);font-size:13px;margin-top:2px" id="qvFullLink">View full details →</button>
         </div>
       </div>
     </div>`;
@@ -725,6 +725,7 @@ function openQuickView(id) {
       navigator.clipboard.writeText(url).then(() => toast('Link copied!')).catch(() => toast('Could not copy'));
     } else { toast('Could not copy'); }
   };
+  $('#qvFullLink').onclick = () => { closeQuickView(); location.hash = '#product/' + p.id; };
 }
 function closeQuickView() { const w = $('#quickModal'); if (w) { w.hidden = true; w.innerHTML = ''; } }
 
@@ -786,6 +787,7 @@ function renderProduct(id) {
           </div>
           <button class="product-fav ${faved ? 'on' : ''}" id="pFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
           <button class="product-share" id="pShare"><span style="font-size:14px">↗</span> Share</button>
+          <a class="product-share" href="https://www.fragrantica.com/search/?q=${encodeURIComponent(p.brand + ' ' + p.name)}" target="_blank" rel="noopener" style="margin-top:0"><span style="font-size:14px">📋</span> Notes & reviews on Fragrantica</a>
         </div>
       </div>
     </section>`;
