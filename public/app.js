@@ -718,10 +718,10 @@ function openQuickView(id) {
     renderGrid();
   };
   $('#qvShare').onclick = () => {
-    const url = window.location.origin + window.location.pathname + '?product=' + p.id;
+    const txt = `NOIR ATELIER — ${p.brand} ${p.name} — ${euro(p.price)}`;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(() => toast('Link copied!')).catch(() => toast('Could not copy'));
-    } else { toast('Could not copy link'); }
+      navigator.clipboard.writeText(txt).then(() => toast('Copied to clipboard!')).catch(() => toast('Could not copy'));
+    } else { toast('Could not copy'); }
   };
 }
 function closeQuickView() { const w = $('#quickModal'); if (w) { w.hidden = true; w.innerHTML = ''; } }
