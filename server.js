@@ -360,58 +360,94 @@ app.post('/api/admin/fetch-parfumo', requireOwner, asyncHandler(async (req, res)
   const { url } = req.body || {};
   if (!url || typeof url !== 'string') return res.status(400).json({ error: 'URL required.' });
   let brand = '', name = '', notes = [], top = '', mid = '', base = '', image = '';
-  const fetchPage = async (u, timeout = 10000) => {
+  const fetchPage = async (u, timeout = 8000) => {
     const ac = new AbortController();
     const t = setTimeout(() => ac.abort(), timeout);
-    const html = await (await fetch(u, { signal: ac.signal })).text();
+    const res = await fetch(u, {
+      signal: ac.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const html = await res.text();
     clearTimeout(t);
     return html;
   };
+  // --- helper to extract a pyramid section from Fragrantica's modern HTML ---
+  const extractFragrNotes = (html, section, nextSection) => {
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const startRe = new RegExp(`<h[23][^>]*>[^<]*${esc(section)}[^<]*<\\/h[23]>`, 'i');
+    const startM = html.match(startRe);
+    if (!startM) return [];
+    const from = startM.index + startM[0].length;
+    const tail = html.substring(from);
+    const endM = nextSection ? tail.match(new RegExp(`<h[23][^>]*>[^<]*${esc(nextSection)}[^<]*<\\/h[23]>`, 'i')) : null;
+    const chunk = endM ? tail.substring(0, endM.index) : tail;
+    return [...chunk.matchAll(/pyramid-note-label[^>]*>\s*([^<]+?)\s*<\/span>/gi)].map(m => m[1].trim()).filter(Boolean);
+  };
+
   // --- Fragrantica URL ---
   const fragrM = url.match(/fragrantica\.com\/perfume\/([^/]+)\/([^/\s?#]+)\.html/i);
   if (fragrM) {
+    brand = decodeURIComponent(fragrM[1]).replace(/-/g, ' ');
+    const rawNamePart = decodeURIComponent(fragrM[2]);
+    name = rawNamePart.replace(/-\d+$/, '').replace(/-/g, ' ');
     try {
       const html = await fetchPage(url);
-      brand = decodeURIComponent(fragrM[1]).replace(/-/g, ' ');
-      // Extract name from page
-      const nm = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-      if (nm) name = nm[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ');
-      // Extract description for notes summary
-      const descM = html.match(/Top\s*note\s*is\s*([^.]+)\.\s*(?:middle|heart)\s*note\s*is\s*([^.]+)\.\s*base\s*note\s*is\s*([^.]+)\./i) ||
-                    html.match(/Top\s*notes?\s*are?\s*([^.]+)\.\s*(?:middle|heart)\s*notes?\s*are?\s*([^.]+)\.\s*base\s*notes?\s*are?\s*([^.]+)\./i);
-      if (descM) {
-        top = descM[1].split(',').map(s => s.trim()).filter(Boolean).join(' · ');
-        mid = descM[2].split(',').map(s => s.trim()).filter(Boolean).join(' · ');
-        base = descM[3].split(',').map(s => s.trim()).filter(Boolean).join(' · ');
+      // Extract name from <title> (more accurate)
+      const titleM = html.match(/<title>([^<]+)<\/title>/i);
+      if (titleM) {
+        const t = titleM[1].replace(/\s*cologne\s*-\s*a fragrance.*$/i, '').trim();
+        if (t) name = t;
       }
-      // Try pyramid section for more precise parsing
-      const pyrM = html.match(/<div[^>]*class="[^"]*pyramid[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/i);
-      const pyrBlock = pyrM ? pyrM[1] : html;
-      if (!descM) {
-        const tM = pyrBlock.match(/Top\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
-        if (tM) top = tM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
-        const mM = pyrBlock.match(/(?:Middle|Heart)\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
-        if (mM) mid = mM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
-        const bM = pyrBlock.match(/Base\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
-        if (bM) base = bM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
+      // Extract pyramid notes from modern Fragrantica HTML
+      if (html.includes('pyramid-note-link')) {
+        // Top Notes — look for "Top Notes" or "Top Note"
+        let tNotes = extractFragrNotes(html, 'Top Notes?', '(?:Middle|Heart)\\s*Notes?');
+        if (tNotes.length) top = tNotes.join(' · ');
+        // Middle/Heart Notes
+        let mNotes = extractFragrNotes(html, '(?:Middle|Heart)\\s*Notes?', 'Base\\s*Notes?');
+        if (!mNotes.length) mNotes = extractFragrNotes(html, 'Middle\\s*Notes?', 'Base\\s*Notes?');
+        if (mNotes.length) mid = mNotes.join(' · ');
+        // Base Notes
+        let bNotes = extractFragrNotes(html, 'Base\\s*Notes?', null);
+        if (bNotes.length) base = bNotes.join(' · ');
+        // Fallback: if section headers missing, grab ALL pyramid-note-labels as flat notes
+        if (!top && !mid && !base) {
+          const all = [...html.matchAll(/pyramid-note-label[^>]*>\s*([^<]+?)\s*<\/span>/gi)].map(m => m[1].trim()).filter(Boolean);
+          notes = all;
+        }
+      } else {
+        // Old-style Fragrantica HTML (fallback)
+        const tM = html.match(/Top\s+notes?\s+(?:are|is)\s+([^;]+);/i);
+        const mM = html.match(/(?:Middle|Heart)\s+notes?\s+(?:are|is)\s+([^;]+);/i);
+        const bM = html.match(/Base\s+notes?\s+(?:are|is)\s+([^;.]+)[;.]/i);
+        if (tM) top = tM[1].split(',').map(s => s.trim()).filter(Boolean).join(' · ');
+        if (mM) mid = mM[1].split(',').map(s => s.trim()).filter(Boolean).join(' · ');
+        if (bM) base = bM[1].split(',').map(s => s.trim()).filter(Boolean).join(' · ');
       }
       // Extract image
-      const imgM = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
-      if (imgM) image = imgM[1];
-      // Combine all notes
+      const allImgs = [...html.matchAll(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/gi)];
+      const bottleImg = allImgs.find(m => m[1].includes('/perfume/o.'));
+      if (bottleImg) image = bottleImg[1];
+    } catch (e) { /* Fragrantica fetch failed */ }
+    // Build flat notes from pyramid
+    if (top || mid || base) {
       const all = [top, mid, base].filter(Boolean).join(' · ');
-      notes = all ? all.split(/·\s*/).map(s => s.trim()).filter((v, i, a) => a.indexOf(v) === i) : [];
-    } catch (e) { return res.status(500).json({ error: 'Failed to fetch Fragrantica page: ' + e.message }); }
+      notes = [...new Set(all.split(/·\s*/).map(s => s.trim()).filter(Boolean))];
+    }
   }
   // --- Parfumo URL ---
   else {
     const m = url.match(/parfumo\.com\/Perfumes\/([^/]+)\/([^/\s?#]+)/i);
     if (!m) return res.status(400).json({ error: 'Unrecognized URL. Use a Parfumo or Fragrantica link.' });
-    brand = decodeURIComponent(m[1]);
+    brand = decodeURIComponent(m[1]).replace(/_/g, ' ');
     name = decodeURIComponent(m[2]).replace(/_/g, ' ');
     try {
       const html = await fetchPage(url);
-      // Extract notes from .notes_list
       const notesMatch = html.match(/<div class="notes_list[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i);
       const rawNotes = [];
       if (notesMatch) {
@@ -423,25 +459,8 @@ app.post('/api/admin/fetch-parfumo', requireOwner, asyncHandler(async (req, res)
         }
       }
       notes = rawNotes;
-      // Extract image from Parfumo
       const imgM = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
       if (imgM) image = imgM[1];
-      // Also try Fragrantica for pyramid breakdown
-      const fragrUrl = `https://www.fragrantica.com/perfume/${encodeURIComponent(m[1])}/${encodeURIComponent(m[2].replace(/_/g, '-'))}.html`;
-      try {
-        const ac2 = new AbortController();
-        const timer2 = setTimeout(() => ac2.abort(), 8000);
-        const fragrHtml = await (await fetch(fragrUrl, { signal: ac2.signal })).text();
-        clearTimeout(timer2);
-        const pyrM = fragrHtml.match(/<div[^>]*class="[^"]*pyramid[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/i);
-        const pyrBlock = pyrM ? pyrM[1] : fragrHtml;
-        const tM = pyrBlock.match(/Top\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
-        if (tM) top = tM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
-        const mM = pyrBlock.match(/(?:Middle|Heart)\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
-        if (mM) mid = mM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
-        const bM = pyrBlock.match(/Base\s*Notes?\s*<\/[^>]+>\s*<[^>]+>\s*<[^>]+>([\s\S]*?)<\/div>/i);
-        if (bM) base = bM[1].replace(/<[^>]+>/g, '').trim().replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean).join(' · ');
-      } catch (e) { /* Fragrantica optional */ }
     } catch (e) { return res.status(500).json({ error: 'Failed to fetch Parfumo page: ' + e.message }); }
   }
   res.json({
