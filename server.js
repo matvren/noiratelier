@@ -243,6 +243,7 @@ app.post('/api/admin/products', requireOwner, asyncHandler(async (req, res) => {
   });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [Number(result.lastInsertRowid)] })).rows[0];
   res.json(row);
+  ghUpload().catch(() => {});
 }));
 
 app.put('/api/admin/products/:id', requireOwner, asyncHandler(async (req, res) => {
@@ -268,11 +269,13 @@ app.put('/api/admin/products/:id', requireOwner, asyncHandler(async (req, res) =
   });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
   res.json(row);
+  ghUpload().catch(() => {});
 }));
 
 app.delete('/api/admin/products/:id', requireOwner, asyncHandler(async (req, res) => {
   await db.execute({ sql: 'DELETE FROM products WHERE id = ?', args: [+req.params.id] });
   res.json({ ok: true });
+  ghUpload().catch(() => {});
 }));
 
 // owner: upload a base64 data URL image and store it in the DB (persists on Turso)
@@ -294,6 +297,7 @@ app.post('/api/admin/products/:id/image', requireOwner, asyncHandler(async (req,
   await db.execute({ sql: 'UPDATE products SET image = ? WHERE id = ?', args: [dataUrl, id] });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
   res.json(row);
+  ghUpload().catch(() => {});
 }));
 
 // owner: import an image by URL. Stores the URL directly (no local file).
@@ -313,6 +317,7 @@ app.post('/api/admin/products/:id/image-url', requireOwner, asyncHandler(async (
   await db.execute({ sql: 'UPDATE products SET image = ? WHERE id = ?', args: [url, id] });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
   res.json(row);
+  ghUpload().catch(() => {});
 }));
 
 // owner: manually save the database to GitHub
