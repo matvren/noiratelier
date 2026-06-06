@@ -242,6 +242,7 @@ app.post('/api/admin/products', requireOwner, asyncHandler(async (req, res) => {
     args: [name, brand, notes || '', description || '', size || '', Math.round(price), stock ?? 50, accent || '#b8975a', image || '', note_top || '', note_mid || '', note_base || ''],
   });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [Number(result.lastInsertRowid)] })).rows[0];
+  try { await ghUpload(); } catch (e) { /* silent */ }
   res.json(row);
 }));
 
@@ -270,11 +271,13 @@ app.put('/api/admin/products/:id', requireOwner, asyncHandler(async (req, res) =
     ],
   });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
+  try { await ghUpload(); } catch (e) { /* silent */ }
   res.json(row);
 }));
 
 app.delete('/api/admin/products/:id', requireOwner, asyncHandler(async (req, res) => {
   await db.execute({ sql: 'DELETE FROM products WHERE id = ?', args: [+req.params.id] });
+  try { await ghUpload(); } catch (e) { /* silent */ }
   res.json({ ok: true });
 }));
 
@@ -295,8 +298,11 @@ app.post('/api/admin/products/:id/image', requireOwner, asyncHandler(async (req,
   // store the data URL directly in the DB so it persists across restarts
   await db.execute({ sql: 'UPDATE products SET image = ? WHERE id = ?', args: [dataUrl, id] });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
+  try { await ghUpload(); } catch (e) { /* silent */ }
   res.json(row);
 }));
+
+app.post('/api/admin/products/:id/image-url', requireOwner, asyncHandler(async (req, res) => {
 
 // owner: import an image by URL. Stores the URL directly (no local file).
 app.post('/api/admin/products/:id/image-url', requireOwner, asyncHandler(async (req, res) => {
@@ -314,6 +320,7 @@ app.post('/api/admin/products/:id/image-url', requireOwner, asyncHandler(async (
 
   await db.execute({ sql: 'UPDATE products SET image = ? WHERE id = ?', args: [url, id] });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
+  try { await ghUpload(); } catch (e) { /* silent */ }
   res.json(row);
 }));
 
@@ -341,11 +348,13 @@ app.post('/api/admin/images', requireOwner, asyncHandler(async (req, res) => {
     sql: 'SELECT * FROM product_images WHERE id = ?',
     args: [Number(result.lastInsertRowid)],
   })).rows[0];
+  try { await ghUpload(); } catch (e) { /* silent */ }
   res.json(row);
 }));
 
 app.delete('/api/admin/images/:id', requireOwner, asyncHandler(async (req, res) => {
   await db.execute({ sql: 'DELETE FROM product_images WHERE id = ?', args: [+req.params.id] });
+  try { await ghUpload(); } catch (e) { /* silent */ }
   res.json({ ok: true });
 }));
 

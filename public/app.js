@@ -1370,22 +1370,12 @@ async function renderAdmin() {
           <div class="field"><span>Description <span style="font-weight:400;text-transform:none;color:var(--muted-2)">auto-generated from notes</span><button type="button" id="nRegen" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:11px;margin-left:6px;text-decoration:underline">↻ regenerate</button></span><input id="n_desc" placeholder="The description is auto-generated from brand + name + notes"/></div>
         </div>
         <div class="form-row-2">
-          <div class="field"><span>Top notes <button type="button" class="note-pick-btn" data-target="n_top">🎯</button></span><input id="n_top" placeholder="Bergamot · Pepper"/></div>
-          <div class="field"><span>Middle notes <button type="button" class="note-pick-btn" data-target="n_mid">🎯</button></span><input id="n_mid" placeholder="Lavender · Geranium"/></div>
+          <div class="field"><span>Top notes <button type="button" class="note-pick-btn" data-target="n_top" data-label="Top notes">🎯</button></span><input id="n_top" placeholder="Bergamot · Pepper"/></div>
+          <div class="field"><span>Middle notes <button type="button" class="note-pick-btn" data-target="n_mid" data-label="Middle notes">🎯</button></span><input id="n_mid" placeholder="Lavender · Geranium"/></div>
         </div>
         <div class="form-row-2">
-          <div class="field"><span>Base notes <button type="button" class="note-pick-btn" data-target="n_base">🎯</button></span><input id="n_base" placeholder="Ambroxan · Cedar"/></div>
+          <div class="field"><span>Base notes <button type="button" class="note-pick-btn" data-target="n_base" data-label="Base notes">🎯</button></span><input id="n_base" placeholder="Ambroxan · Cedar"/></div>
           <div class="field"></div>
-        </div>
-        <div id="notePicker" style="display:none;margin-bottom:14px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px">
-          <div style="font-size:12px;color:var(--muted-2);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase">Pick notes — click to select, then press →Top, →Mid or →Base</div>
-          ${Object.entries(COMMON_NOTES).map(([cat, notes]) => `<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted-2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">${cat}</div><div style="display:flex;flex-wrap:wrap;gap:4px">${notes.map(n => `<button type="button" class="note-pill" data-note="${n}">${n}</button>`).join('')}</div></div>`).join('')}
-          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-            <button type="button" class="btn-sm" style="background:var(--gold);color:#000;border:none;font-size:12px" id="noteFillTop">→ Top</button>
-            <button type="button" class="btn-sm" style="background:var(--gold);color:#000;border:none;font-size:12px" id="noteFillMid">→ Mid</button>
-            <button type="button" class="btn-sm" style="background:var(--gold);color:#000;border:none;font-size:12px" id="noteFillBase">→ Base</button>
-            <button type="button" class="btn-sm" style="border-color:var(--line);color:var(--muted);font-size:12px" id="notePickerClose">Close</button>
-          </div>
         </div>
         <div class="field"><span>Image <span style="font-weight:400;text-transform:none;color:var(--muted-2)">(optional)</span></span>
           <div class="add-drop" id="nDrop">
@@ -1434,7 +1424,24 @@ async function renderAdmin() {
           </table>
         </div>
       </div>
-    </section>`;
+    </section>
+
+    <!-- Note Picker Modal -->
+    <div id="notePickerWrap" class="modal-wrap" hidden>
+      <div class="modal" style="padding:24px;width:min(500px,95%);max-height:85vh;overflow-y:auto;animation:modal-pop .18s cubic-bezier(.2,.9,.25,1)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-size:15px;font-weight:500;letter-spacing:0.5px" id="notePickerTitle">Pick Notes</span>
+          <button class="modal-close" id="notePickerClose" type="button">✕</button>
+        </div>
+        <input id="notePickerSearch" type="text" placeholder="Search notes…" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:13px;margin-bottom:16px;box-sizing:border-box"/>
+        <div id="notePickerBody" style="margin-bottom:16px"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px">
+          <button type="button" class="btn-sm note-fill-btn" data-fill="top" style="background:var(--gold);color:#000;border:none;font-size:12px">→ Top</button>
+          <button type="button" class="btn-sm note-fill-btn" data-fill="mid" style="background:var(--gold);color:#000;border:none;font-size:12px">→ Mid</button>
+          <button type="button" class="btn-sm note-fill-btn" data-fill="base" style="background:var(--gold);color:#000;border:none;font-size:12px">→ Base</button>
+        </div>
+      </div>
+    </div>`;
 
   function renderAdminTable(rows) {
     const tbody = document.querySelector('.atable tbody');
@@ -1456,9 +1463,9 @@ async function renderAdmin() {
         <td><input value="${p.brand}" data-f="brand"/></td>
         <td><input value="${p.name}" data-f="name"/></td>
         <td><input value="${p.notes || ''}" data-f="notes"/></td>
-        <td><input value="${p.note_top || ''}" data-f="note_top" style="width:120px"/></td>
-        <td><input value="${p.note_mid || ''}" data-f="note_mid" style="width:120px"/></td>
-        <td><input value="${p.note_base || ''}" data-f="note_base" style="width:120px"/></td>
+        <td><div style="display:flex;align-items:center;gap:3px"><input id="nt_${p.id}" value="${p.note_top || ''}" data-f="note_top" style="width:95px"/><button type="button" class="note-pick-btn" data-target="nt_${p.id}" data-label="Top notes">🎯</button></div></td>
+        <td><div style="display:flex;align-items:center;gap:3px"><input id="nm_${p.id}" value="${p.note_mid || ''}" data-f="note_mid" style="width:95px"/><button type="button" class="note-pick-btn" data-target="nm_${p.id}" data-label="Middle notes">🎯</button></div></td>
+        <td><div style="display:flex;align-items:center;gap:3px"><input id="nb_${p.id}" value="${p.note_base || ''}" data-f="note_base" style="width:95px"/><button type="button" class="note-pick-btn" data-target="nb_${p.id}" data-label="Base notes">🎯</button></div></td>
         <td><input value="${p.size || ''}" data-f="size" style="width:70px"/></td>
         <td><input class="price-in" type="number" step="0.01" value="${(p.price/100).toFixed(2)}" data-f="price"/></td>
         <td><input value="${p.stock}" data-f="stock" style="width:60px"/></td>
@@ -1482,7 +1489,6 @@ async function renderAdmin() {
     try {
       await api('/api/admin/images', { method: 'POST', body: { name, data_url: dataUrl } });
       toast('Image saved');
-      api('/api/admin/save', { method: 'POST' }).catch(() => {});
       renderAdmin();
     } catch (e) { toast(e.message); }
   }
@@ -1543,7 +1549,7 @@ async function renderAdmin() {
     e.stopPropagation();
     const id = +b.dataset.delLib;
     if (!confirm('Delete this image from library?')) return;
-    try { await api('/api/admin/images/' + id, { method: 'DELETE' }); toast('Deleted'); api('/api/admin/save', { method: 'POST' }).catch(() => {}); renderAdmin(); } catch (e) { toast(e.message); }
+    try { await api('/api/admin/images/' + id, { method: 'DELETE' }); toast('Deleted'); renderAdmin(); } catch (e) { toast(e.message); }
   });
   // Click library image to copy URL
   $$('.lib-img').forEach(el => el.onclick = () => {
@@ -1565,28 +1571,40 @@ async function renderAdmin() {
     try {
       await api('/api/admin/products/' + id + '/image-url', { method: 'POST', body: { url: val } });
       toast('Image updated');
-      api('/api/admin/save', { method: 'POST' }).catch(() => {});
       renderAdmin();
     } catch (e) { toast(e.message); }
   });
-  // Note picker
-  $$('.note-pick-btn').forEach(btn => btn.onclick = () => {
-    const picker = $('#notePicker');
-    picker.style.display = picker.style.display === 'none' ? '' : 'none';
-    state._noteTarget = btn.dataset.target;
-  });
-  // Note pills toggle
-  $$('.note-pill').forEach(pill => pill.onclick = function() { this.classList.toggle('sel'); });
-  function fillNotes(targetId) {
-    const sel = [...document.querySelectorAll('.note-pill.sel')].map(p => p.dataset.note);
-    if (!sel.length) return;
-    const inp = $('#' + targetId);
-    inp.value = inp.value ? inp.value + ' · ' + sel.join(' · ') : sel.join(' · ');
+  function renderNotePills(query) {
+    const body = $('#notePickerBody');
+    const entries = Object.entries(COMMON_NOTES);
+    const filtered = query
+      ? entries.map(([cat, notes]) => [cat, notes.filter(n => n.toLowerCase().includes(query.toLowerCase()))]).filter(([_, n]) => n.length)
+      : entries;
+    body.innerHTML = filtered.map(([cat, notes]) => `
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:var(--muted-2);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">${cat}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${notes.map(n => `<button type="button" class="note-pill" data-note="${n}">${n}</button>`).join('')}</div>
+      </div>`).join('');
+    body.querySelectorAll('.note-pill').forEach(pill => pill.onclick = function() { this.classList.toggle('sel'); });
   }
-  $('#noteFillTop').onclick = () => fillNotes('n_top');
-  $('#noteFillMid').onclick = () => fillNotes('n_mid');
-  $('#noteFillBase').onclick = () => fillNotes('n_base');
-  $('#notePickerClose').onclick = () => { $('#notePicker').style.display = 'none'; };
+  // Note picker modal
+  $$('.note-pick-btn').forEach(btn => btn.onclick = () => {
+    state._noteTarget = btn.dataset.target;
+    $('#notePickerTitle').textContent = 'Pick ' + btn.dataset.label;
+    renderNotePills($('#notePickerSearch').value);
+    $('#notePickerWrap').hidden = false;
+  });
+  $('#notePickerClose').onclick = () => { $('#notePickerWrap').hidden = true; };
+  $('#notePickerWrap').onclick = (e) => { if (e.target === e.currentTarget) $('#notePickerWrap').hidden = true; };
+  $('#notePickerSearch').oninput = () => renderNotePills($('#notePickerSearch').value);
+  // Fill buttons
+  $$('.note-fill-btn').forEach(btn => btn.onclick = () => {
+    const sel = [...document.querySelectorAll('#notePickerBody .note-pill.sel')].map(p => p.dataset.note);
+    if (!sel.length) return;
+    const inp = $('#' + state._noteTarget);
+    if (!inp) return;
+    inp.value = inp.value ? inp.value + ' · ' + sel.join(' · ') : sel.join(' · ');
+  });
 
   let _newImgDataUrl = null;
   const nFileIn = $('#nImgFile');
@@ -1734,7 +1752,6 @@ async function renderAdmin() {
       $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = ''; $('#n_top').value = ''; $('#n_mid').value = ''; $('#n_base').value = '';
       clearNewImg();
       toast('Fragrance added');
-      api('/api/admin/save', { method: 'POST' }).catch(() => {});
     } catch (e) { toast(e.message); }
   };
 
@@ -1752,7 +1769,6 @@ async function renderAdmin() {
         const updated = await api('/api/admin/products/' + id, { method: 'PUT', body });
         state.products = state.products.map(p => p.id == id ? updated : p);
         toast('Saved ✓');
-        api('/api/admin/save', { method: 'POST' }).catch(() => {});
       } catch (e) { toast(e.message); }
     };
     tr.querySelector('.del').onclick = async () => {
@@ -1761,7 +1777,6 @@ async function renderAdmin() {
       tr.remove();
       state.products = state.products.filter(p => p.id != id);
       toast('Deleted');
-      api('/api/admin/save', { method: 'POST' }).catch(() => {});
     };
     // image upload handlers (same as below)
     const fileIn = tr.querySelector('.file-in');
@@ -1776,7 +1791,6 @@ async function renderAdmin() {
       if (!product.image) thumb.style.background = `linear-gradient(160deg,${product.accent || '#b8975a'},#0c0c0e)`;
       busy(false);
       toast('Image saved ✓');
-      api('/api/admin/save', { method: 'POST' }).catch(() => {});
     }
     async function uploadFile(file) {
       if (!file) return;
