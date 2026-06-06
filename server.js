@@ -263,9 +263,9 @@ app.put('/api/admin/products/:id', requireOwner, asyncHandler(async (req, res) =
       f.accent ?? p.accent,
       f.image ?? p.image,
       f.active != null ? (f.active ? 1 : 0) : p.active,
-      f.note_top ?? p.note_top || '',
-      f.note_mid ?? p.note_mid || '',
-      f.note_base ?? p.note_base || '',
+      f.note_top != null ? f.note_top : (p.note_top || ''),
+      f.note_mid != null ? f.note_mid : (p.note_mid || ''),
+      f.note_base != null ? f.note_base : (p.note_base || ''),
       id,
     ],
   });
