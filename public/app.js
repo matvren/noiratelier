@@ -787,7 +787,7 @@ function renderProduct(id) {
           </div>
           <button class="product-fav ${faved ? 'on' : ''}" id="pFav">${faved ? '♥ Saved' : '♡ Save to favourites'}</button>
           <button class="product-share" id="pShare"><span style="font-size:14px">↗</span> Share</button>
-          <div class="fragrantica-notes" id="fragNotes"><div class="frag-loading">Loading notes…</div></div>
+          ${(p.note_top || p.note_mid || p.note_base) ? `<div class="frag-pyramid"><h4 class="frag-head">Fragrance notes</h4>${[['top', p.note_top], ['heart', p.note_mid], ['base', p.note_base]].filter(([,v]) => v).map(([l, v]) => `<div class="frag-level"><span class="frag-level-label">${l}</span><span class="frag-level-notes">${v}</span></div>`).join('')}</div>` : ''}
         </div>
       </div>
     </section>`;
@@ -805,25 +805,6 @@ function renderProduct(id) {
       navigator.clipboard.writeText(url).then(() => toast('Link copied!')).catch(() => toast('Could not copy'));
     } else { toast('Could not copy'); }
   };
-  // Fetch Fragrantica notes
-  (async () => {
-    const el = $('#fragNotes');
-    try {
-      const data = await api('/api/fragrantica/' + id);
-      if (data && data.notes) {
-        const hasNotes = data.notes.top?.length || data.notes.heart?.length || data.notes.base?.length;
-        if (hasNotes) {
-          el.innerHTML = `<div class="frag-pyramid"><h4 class="frag-head">Fragrance notes</h4>${['top','heart','base'].map(level => data.notes[level]?.length ? `<div class="frag-level"><span class="frag-level-label">${level}</span><span class="frag-level-notes">${data.notes[level].join(' · ')}</span></div>` : '').join('')}</div>`;
-        } else {
-          el.innerHTML = '';
-        }
-      } else {
-        el.innerHTML = '';
-      }
-    } catch (e) {
-      el.innerHTML = '';
-    }
-  })();
 }
 
 // ---------- contact ----------
@@ -1356,6 +1337,14 @@ async function renderAdmin() {
           <div class="field"><span>Price (€)</span><input id="n_price" type="number" step="0.01" placeholder="135.00"/></div>
           <div class="field"><span>Description <span style="font-weight:400;text-transform:none;color:var(--muted-2)">auto-generated from notes</span><button type="button" id="nRegen" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:11px;margin-left:6px;text-decoration:underline">↻ regenerate</button></span><input id="n_desc" placeholder="The description is auto-generated from brand + name + notes"/></div>
         </div>
+        <div class="form-row-2">
+          <div class="field"><span>Top notes</span><input id="n_top" placeholder="Bergamot · Pepper"/></div>
+          <div class="field"><span>Heart notes</span><input id="n_mid" placeholder="Lavender · Geranium"/></div>
+        </div>
+        <div class="form-row-2">
+          <div class="field"><span>Base notes</span><input id="n_base" placeholder="Ambroxan · Cedar"/></div>
+          <div class="field"></div>
+        </div>
         <div class="field"><span>Image <span style="font-weight:400;text-transform:none;color:var(--muted-2)">(optional)</span></span>
           <div class="add-drop" id="nDrop">
             <div class="add-drop-inner" id="nImgPreview">
@@ -1373,7 +1362,7 @@ async function renderAdmin() {
         <h3>Manage collection</h3>
         <div style="overflow-x:auto">
         <table class="atable">
-          <thead><tr><th>Image</th><th>Brand</th><th>Name</th><th>Notes</th><th>Size</th><th>Price (€)</th><th>Stock</th><th></th></tr></thead>
+          <thead><tr><th>Image</th><th>Brand</th><th>Name</th><th>Notes</th><th>Top</th><th>Heart</th><th>Base</th><th>Size</th><th>Price</th><th>Stock</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
         </div>
@@ -1420,6 +1409,9 @@ async function renderAdmin() {
         <td><input value="${p.brand}" data-f="brand"/></td>
         <td><input value="${p.name}" data-f="name"/></td>
         <td><input value="${p.notes || ''}" data-f="notes"/></td>
+        <td><input value="${p.note_top || ''}" data-f="note_top" style="width:120px"/></td>
+        <td><input value="${p.note_mid || ''}" data-f="note_mid" style="width:120px"/></td>
+        <td><input value="${p.note_base || ''}" data-f="note_base" style="width:120px"/></td>
         <td><input value="${p.size || ''}" data-f="size" style="width:70px"/></td>
         <td><input class="price-in" type="number" step="0.01" value="${(p.price/100).toFixed(2)}" data-f="price"/></td>
         <td><input value="${p.stock}" data-f="stock" style="width:60px"/></td>
@@ -1555,6 +1547,9 @@ async function renderAdmin() {
       notes: $('#n_notes').value.trim(),
       size: $('#n_size').value.trim(),
       description: $('#n_desc').value.trim(),
+      note_top: $('#n_top').value.trim(),
+      note_mid: $('#n_mid').value.trim(),
+      note_base: $('#n_base').value.trim(),
       accent: '#b8975a',
       price: Math.round(parseFloat($('#n_price').value || '0') * 100),
     };
@@ -1569,7 +1564,7 @@ async function renderAdmin() {
       const fresh = await api('/api/admin/products');
       state.products = fresh;
       renderAdminTable(fresh);
-      $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = '';
+      $('#n_name').value = ''; $('#n_brand').value = ''; $('#n_notes').value = ''; $('#n_size').value = ''; $('#n_desc').value = ''; $('#n_price').value = ''; $('#n_top').value = ''; $('#n_mid').value = ''; $('#n_base').value = '';
       clearNewImg();
       toast('Fragrance added');
       api('/api/admin/save', { method: 'POST' }).catch(() => {});

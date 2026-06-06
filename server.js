@@ -60,26 +60,26 @@ async function autoSeed() {
   const prodCount = (await db.execute('SELECT COUNT(*) AS c FROM products')).rows[0].c;
   if (prodCount === 0) {
     const products = [
-      { name: 'Sauvage EDP',            brand: 'Dior',                notes: 'Bergamot · Ambroxan · Vanilla',          size: '100ml', price: 13500, accent: '#5b6e8c', description: 'A radically fresh, raw composition. Bright bergamot meets a powerful woody-ambery trail.' },
-      { name: 'Bleu de Chanel EDP',     brand: 'Chanel',              notes: 'Citrus · Cedar · Sandalwood',            size: '100ml', price: 14800, accent: '#2f4a6b', description: 'An aromatic-woody fragrance of timeless elegance and unexpected freshness.' },
-      { name: 'Aventus',                brand: 'Creed',               notes: 'Pineapple · Birch · Musk',               size: '100ml', price: 39500, accent: '#8a8f98', description: 'The iconic fruity-smoky signature. Bold, confident and unmistakable.' },
-      { name: 'Oud Wood',               brand: 'Tom Ford',            notes: 'Oud · Rosewood · Cardamom',              size: '50ml',  price: 27500, accent: '#6b4a2f', description: 'Rare oud wood smoothed by warm spice and a creamy, smoky finish.' },
-      { name: 'Black Orchid',          brand: 'Tom Ford',            notes: 'Truffle · Black Orchid · Patchouli',     size: '100ml', price: 16500, accent: '#3a2b4a', description: 'A luxurious, sensual fragrance of rich dark accords and an alluring potion of black orchids.' },
-      { name: "La Nuit de L'Homme",    brand: 'Yves Saint Laurent',  notes: 'Cardamom · Lavender · Cedar',            size: '100ml', price: 11500, accent: '#1f1f24', description: 'Seductive and refined. A magnetic contrast of fresh spice and warm woods.' },
-      { name: 'Acqua di Giò Profumo',   brand: 'Giorgio Armani',      notes: 'Marine · Incense · Patchouli',           size: '75ml',  price: 12500, accent: '#3d5a6b', description: 'A deep aquatic with smoky incense — the sea at dusk in a bottle.' },
-      { name: 'Tobacco Vanille',        brand: 'Tom Ford',            notes: 'Tobacco · Vanilla · Tonka',              size: '50ml',  price: 28500, accent: '#7a5230', description: 'Opulent and warm. Smooth tobacco leaf wrapped in spice and creamy vanilla.' },
-      { name: 'Y EDP',                  brand: 'Yves Saint Laurent',  notes: 'Apple · Sage · Amberwood',               size: '100ml', price: 12000, accent: '#2b3a4a', description: 'Fresh, bold and modern — a clean signature with a magnetic woody base.' },
-      { name: 'Spicebomb Extreme',      brand: 'Viktor & Rolf',       notes: 'Tobacco · Cinnamon · Vanilla',           size: '90ml',  price: 11800, accent: '#5a2b2b', description: 'An explosive blend of warm spice and creamy tobacco. Cold-weather perfection.' },
-      { name: 'The One EDP',            brand: 'Dolce & Gabbana',     notes: 'Tobacco · Ginger · Amber',               size: '100ml', price: 10500, accent: '#6b5230', description: 'A warm, elegant oriental — refined spice over a smooth amber heart.' },
-      { name: 'Eros EDT',               brand: 'Versace',             notes: 'Mint · Tonka · Vanilla',                 size: '100ml', price: 9500,  accent: '#2f5a6b', description: 'Fresh, glacial mint over a sweet, addictive base. Vibrant and bold.' },
-      { name: 'Layton',                 brand: 'Parfums de Marly',    notes: 'Apple · Lavender · Vanilla',             size: '125ml', price: 27000, accent: '#3a3f5a', description: 'A modern crowd-pleaser — bright apple and lavender melting into creamy vanilla.' },
-      { name: 'Baccarat Rouge 540',     brand: 'Maison Francis K.',   notes: 'Saffron · Jasmine · Amberwood',          size: '70ml',  price: 32500, accent: '#8a3a3a', description: 'Luminous and ethereal. An amber-floral signature that lingers like light on crystal.' },
-      { name: 'Reflection Man',         brand: 'Amouage',             notes: 'Rosemary · Jasmine · Sandalwood',        size: '100ml', price: 31500, accent: '#4a5a4a', description: 'A polished floral-woody — clean, sophisticated and endlessly wearable.' },
-      { name: 'Interlude Man',          brand: 'Amouage',             notes: 'Oregano · Incense · Leather',            size: '100ml', price: 33500, accent: '#5a4a2f', description: 'Smoky, resinous and intense — a controlled chaos of incense and spice.' },
-      { name: 'Erba Pura',              brand: 'Xerjoff',             notes: 'Fruit · Vanilla · Musk',                 size: '100ml', price: 24500, accent: '#8a6b2f', description: 'A radiant fruity-amber. Sweet, juicy and luxuriously long-lasting.' },
-      { name: "Ombré Leather",          brand: 'Tom Ford',            notes: 'Leather · Jasmine · Patchouli',          size: '100ml', price: 17500, accent: '#5a3a2b', description: 'Soft, supple leather with a floral edge. Raw, warm and effortlessly cool.' },
-      { name: 'Grand Soir',             brand: 'Maison Francis K.',   notes: 'Amber · Vanilla · Benzoin',              size: '70ml',  price: 26500, accent: '#7a5a2f', description: 'A golden amber glow — warm, smooth and quietly luxurious for the evening.' },
-      { name: 'Fucking Fabulous',       brand: 'Tom Ford',            notes: 'Almond · Leather · Tonka',               size: '50ml',  price: 29500, accent: '#3a2f2b', description: 'A daring leather-amber with creamy almond and bitter herbs. Provocative and unique.' },
+      { name: 'Sauvage EDP',            brand: 'Dior',                notes: 'Bergamot · Ambroxan · Vanilla',          top: 'Bergamot · Pepper', mid: 'Lavender · Geranium · Sichuan Pepper', base: 'Ambroxan · Cedar · Vanilla', size: '100ml', price: 13500, accent: '#5b6e8c', description: 'A radically fresh, raw composition. Bright bergamot meets a powerful woody-ambery trail.' },
+      { name: 'Bleu de Chanel EDP',     brand: 'Chanel',              notes: 'Citrus · Cedar · Sandalwood',            top: 'Citron · Grapefruit · Mint', mid: 'Ginger · Nutmeg · Jasmine', base: 'Cedar · Sandalwood · Amber', size: '100ml', price: 14800, accent: '#2f4a6b', description: 'An aromatic-woody fragrance of timeless elegance and unexpected freshness.' },
+      { name: 'Aventus',                brand: 'Creed',               notes: 'Pineapple · Birch · Musk',               top: 'Pineapple · Apple · Bergamot', mid: 'Birch · Rose · Jasmine', base: 'Musk · Oakmoss · Vanilla', size: '100ml', price: 39500, accent: '#8a8f98', description: 'The iconic fruity-smoky signature. Bold, confident and unmistakable.' },
+      { name: 'Oud Wood',               brand: 'Tom Ford',            notes: 'Oud · Rosewood · Cardamom',              top: 'Cardamom · Rosewood · Mandarin', mid: 'Oud · Cedar · Sandalwood', base: 'Vanilla · Tonka · Amber', size: '50ml',  price: 27500, accent: '#6b4a2f', description: 'Rare oud wood smoothed by warm spice and a creamy, smoky finish.' },
+      { name: 'Black Orchid',          brand: 'Tom Ford',            notes: 'Truffle · Black Orchid · Patchouli',     top: 'Truffle · Black Currant · Ylang', mid: 'Black Orchid · Lotus · Iris', base: 'Patchouli · Incense · Vanilla', size: '100ml', price: 16500, accent: '#3a2b4a', description: 'A luxurious, sensual fragrance of rich dark accords and an alluring potion of black orchids.' },
+      { name: "La Nuit de L'Homme",    brand: 'Yves Saint Laurent',  notes: 'Cardamom · Lavender · Cedar',            top: 'Cardamom · Bergamot', mid: 'Lavender · Cedar · Coumarin', base: 'Caraway · Leather · Vetiver', size: '100ml', price: 11500, accent: '#1f1f24', description: 'Seductive and refined. A magnetic contrast of fresh spice and warm woods.' },
+      { name: 'Acqua di Giò Profumo',   brand: 'Giorgio Armani',      notes: 'Marine · Incense · Patchouli',           top: 'Bergamot · Marine · Sage', mid: 'Rosemary · Geranium · Incense', base: 'Patchouli · Amber · Musk', size: '75ml',  price: 12500, accent: '#3d5a6b', description: 'A deep aquatic with smoky incense — the sea at dusk in a bottle.' },
+      { name: 'Tobacco Vanille',        brand: 'Tom Ford',            notes: 'Tobacco · Vanilla · Tonka',              top: 'Tobacco · Spices', mid: 'Vanilla · Cacao · Tonka', base: 'Dried Fruits · Woods · Amber', size: '50ml',  price: 28500, accent: '#7a5230', description: 'Opulent and warm. Smooth tobacco leaf wrapped in spice and creamy vanilla.' },
+      { name: 'Y EDP',                  brand: 'Yves Saint Laurent',  notes: 'Apple · Sage · Amberwood',               top: 'Apple · Ginger · Bergamot', mid: 'Sage · Juniper · Geranium', base: 'Amberwood · Cedar · Tonka', size: '100ml', price: 12000, accent: '#2b3a4a', description: 'Fresh, bold and modern — a clean signature with a magnetic woody base.' },
+      { name: 'Spicebomb Extreme',      brand: 'Viktor & Rolf',       notes: 'Tobacco · Cinnamon · Vanilla',           top: 'Grapefruit · Cinnamon · Pepper', mid: 'Tobacco · Spices · Saffron', base: 'Vanilla · Amber · Leather', size: '90ml',  price: 11800, accent: '#5a2b2b', description: 'An explosive blend of warm spice and creamy vanilla. Cold-weather perfection.' },
+      { name: 'The One EDP',            brand: 'Dolce & Gabbana',     notes: 'Tobacco · Ginger · Amber',               top: 'Bergamot · Coriander · Peach', mid: 'Ginger · Orange Blossom · Rose', base: 'Tobacco · Amber · Cedar', size: '100ml', price: 10500, accent: '#6b5230', description: 'A warm, elegant oriental — refined spice over a smooth amber heart.' },
+      { name: 'Eros EDT',               brand: 'Versace',             notes: 'Mint · Tonka · Vanilla',                 top: 'Mint · Apple · Lemon', mid: 'Tonka · Geranium · Amber', base: 'Vanilla · Cedar · Oakmoss', size: '100ml', price: 9500,  accent: '#2f5a6b', description: 'Fresh, glacial mint over a sweet, addictive base. Vibrant and bold.' },
+      { name: 'Layton',                 brand: 'Parfums de Marly',    notes: 'Apple · Lavender · Vanilla',             top: 'Apple · Lavender · Mandarin', mid: 'Jasmine · Violet · Geranium', base: 'Vanilla · Sandalwood · Patchouli', size: '125ml', price: 27000, accent: '#3a3f5a', description: 'A modern crowd-pleaser — bright apple and lavender melting into creamy vanilla.' },
+      { name: 'Baccarat Rouge 540',     brand: 'Maison Francis K.',   notes: 'Saffron · Jasmine · Amberwood',          top: 'Saffron · Jasmine', mid: 'Amberwood · Cedar', base: 'Ambergris · Musk · Fir Resin', size: '70ml',  price: 32500, accent: '#8a3a3a', description: 'Luminous and ethereal. An amber-floral signature that lingers like light on crystal.' },
+      { name: 'Reflection Man',         brand: 'Amouage',             notes: 'Rosemary · Jasmine · Sandalwood',        top: 'Rosemary · Pepper · Juniper', mid: 'Jasmine · Ylang · Iris', base: 'Sandalwood · Cedar · Musk', size: '100ml', price: 31500, accent: '#4a5a4a', description: 'A polished floral-woody — clean, sophisticated and endlessly wearable.' },
+      { name: 'Interlude Man',          brand: 'Amouage',             notes: 'Oregano · Incense · Leather',            top: 'Oregano · Pepper · Bergamot', mid: 'Incense · Amber · Frankincense', base: 'Leather · Oud · Sandalwood', size: '100ml', price: 33500, accent: '#5a4a2f', description: 'Smoky, resinous and intense — a controlled chaos of incense and spice.' },
+      { name: 'Erba Pura',              brand: 'Xerjoff',             notes: 'Fruit · Vanilla · Musk',                 top: 'Fruits · Orange · Calabrian Bergamot', mid: 'Vanilla · Musk · Amber', base: 'Woods · Sandalwood · White Musk', size: '100ml', price: 24500, accent: '#8a6b2f', description: 'A radiant fruity-amber. Sweet, juicy and luxuriously long-lasting.' },
+      { name: "Ombré Leather",          brand: 'Tom Ford',            notes: 'Leather · Jasmine · Patchouli',          top: 'Cardamom · Leather', mid: 'Jasmine · Peony · Violet', base: 'Patchouli · Amber · Moss', size: '100ml', price: 17500, accent: '#5a3a2b', description: 'Soft, supple leather with a floral edge. Raw, warm and effortlessly cool.' },
+      { name: 'Grand Soir',             brand: 'Maison Francis K.',   notes: 'Amber · Vanilla · Benzoin',              top: 'Bergamot · Mandarin', mid: 'Amber · Benzoin · Cistus', base: 'Vanilla · Tonka · Musk', size: '70ml',  price: 26500, accent: '#7a5a2f', description: 'A golden amber glow — warm, smooth and quietly luxurious for the evening.' },
+      { name: 'Fucking Fabulous',       brand: 'Tom Ford',            notes: 'Almond · Leather · Tonka',               top: 'Almond · Bitter Almond · Lavender', mid: 'Leather · Sage · Iris', base: 'Tonka · Suede · Woods', size: '50ml',  price: 29500, accent: '#3a2f2b', description: 'A daring leather-amber with creamy almond and bitter herbs. Provocative and unique.' },
     ];
     await db.execute('BEGIN');
     try {
@@ -87,8 +87,8 @@ async function autoSeed() {
         const r = products[idx];
         const image = idx < 10 ? `/images/${idx + 1}.png` : '';
         await db.execute({
-          sql: `INSERT INTO products (name, brand, notes, description, size, price, stock, accent, image) VALUES (?, ?, ?, ?, ?, ?, 50, ?, ?)`,
-          args: [r.name, r.brand, r.notes, r.description, r.size, r.price, r.accent, image],
+          sql: `INSERT INTO products (name, brand, notes, description, size, price, stock, accent, image, note_top, note_mid, note_base) VALUES (?, ?, ?, ?, ?, ?, 50, ?, ?, ?, ?, ?)`,
+          args: [r.name, r.brand, r.notes, r.description, r.size, r.price, r.accent, image, r.top, r.mid, r.base],
         });
       }
       await db.execute('COMMIT');
@@ -234,12 +234,12 @@ app.get('/api/admin/products', requireOwner, asyncHandler(async (_req, res) => {
 }));
 
 app.post('/api/admin/products', requireOwner, asyncHandler(async (req, res) => {
-  const { name, brand, notes, description, size, price, stock, accent, image } = req.body || {};
+  const { name, brand, notes, description, size, price, stock, accent, image, note_top, note_mid, note_base } = req.body || {};
   if (!name || !brand || price == null) return res.status(400).json({ error: 'Name, brand and price required.' });
   const result = await db.execute({
-    sql: `INSERT INTO products (name, brand, notes, description, size, price, stock, accent, image)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [name, brand, notes || '', description || '', size || '', Math.round(price), stock ?? 50, accent || '#b8975a', image || ''],
+    sql: `INSERT INTO products (name, brand, notes, description, size, price, stock, accent, image, note_top, note_mid, note_base)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [name, brand, notes || '', description || '', size || '', Math.round(price), stock ?? 50, accent || '#b8975a', image || '', note_top || '', note_mid || '', note_base || ''],
   });
   const row = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [Number(result.lastInsertRowid)] })).rows[0];
   res.json(row);
@@ -251,7 +251,7 @@ app.put('/api/admin/products/:id', requireOwner, asyncHandler(async (req, res) =
   if (!p) return res.status(404).json({ error: 'Not found.' });
   const f = req.body || {};
   await db.execute({
-    sql: 'UPDATE products SET name=?, brand=?, notes=?, description=?, size=?, price=?, stock=?, accent=?, image=?, active=? WHERE id=?',
+    sql: 'UPDATE products SET name=?, brand=?, notes=?, description=?, size=?, price=?, stock=?, accent=?, image=?, active=?, note_top=?, note_mid=?, note_base=? WHERE id=?',
     args: [
       f.name ?? p.name,
       f.brand ?? p.brand,
@@ -263,6 +263,9 @@ app.put('/api/admin/products/:id', requireOwner, asyncHandler(async (req, res) =
       f.accent ?? p.accent,
       f.image ?? p.image,
       f.active != null ? (f.active ? 1 : 0) : p.active,
+      f.note_top ?? p.note_top || '',
+      f.note_mid ?? p.note_mid || '',
+      f.note_base ?? p.note_base || '',
       id,
     ],
   });
@@ -319,77 +322,6 @@ app.post('/api/admin/save', requireOwner, asyncHandler(async (_req, res) => {
   const result = await ghUpload();
   if (result.ok) res.json({ ok: true });
   else res.status(500).json({ error: result.error });
-}));
-
-// ---------- fragrantica proxy ----------
-app.get('/api/fragrantica/:id', asyncHandler(async (req, res) => {
-  const id = +req.params.id;
-  const p = (await db.execute({ sql: 'SELECT * FROM products WHERE id = ?', args: [id] })).rows[0];
-  if (!p) return res.status(404).json({ error: 'Not found' });
-
-  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-  // Helper: extract notes from HTML
-  function extractNotes(html) {
-    const notes = { top: [], heart: [], base: [] };
-    // Try to find the pyramid section
-    const pyr = html.match(/<div[^>]*class="[^"]*pyramid[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/i);
-    const section = pyr ? pyr[1] : html;
-    // Extract note pills/links — Fragrantica uses <a> tags with note names
-    const allNotes = [...section.matchAll(/<a[^>]*>([^<]+)<\/a>/g)].map(m => m[1].trim()).filter(Boolean);
-    if (allNotes.length) {
-      // Try to split into thirds for top/heart/base
-      const third = Math.ceil(allNotes.length / 3);
-      notes.top = allNotes.slice(0, third);
-      notes.heart = allNotes.slice(third, third * 2);
-      notes.base = allNotes.slice(third * 2);
-      return notes;
-    }
-    // Fallback: just grab any note-like text near "notes" headings
-    const lines = [...section.matchAll(/(?:Top|Heart|Middle|Base)\s*Notes?[^]*?<\/div>/gi)].map(m => m[0]);
-    if (lines.length) {
-      lines.forEach(line => {
-        const items = [...line.matchAll(/<a[^>]*>([^<]+)<\/a>/g)].map(m => m[1].trim()).filter(Boolean);
-        if (/top/i.test(line)) notes.top.push(...items);
-        else if (/heart|middle/i.test(line)) notes.heart.push(...items);
-        else if (/base/i.test(line)) notes.base.push(...items);
-      });
-      return notes;
-    }
-    return null;
-  }
-
-  async function fetchPage(url) {
-    const res = await fetch(url, { headers: { 'User-Agent': ua, 'Accept': 'text/html' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.text();
-  }
-
-  // If product has a known fragrantica_url, use it directly
-  if (p.fragrantica_url) {
-    try {
-      const html = await fetchPage(p.fragrantica_url);
-      const notes = extractNotes(html);
-      if (notes) return res.json({ notes, url: p.fragrantica_url });
-    } catch (e) { /* fall through to search */ }
-  }
-
-  // Search Fragrantica
-  try {
-    const q = encodeURIComponent(`${p.brand} ${p.name} perfume`);
-    const html = await fetchPage(`https://www.fragrantica.com/search/?q=${q}`);
-    const link = html.match(/<a[^>]*href="(\/[^"]*perfume[^"]*)"[^>]*>/i);
-    if (!link) return res.json({ notes: null, error: 'Not found on Fragrantica' });
-
-    const fragUrl = `https://www.fragrantica.com${link[1]}`;
-    const pageHtml = await fetchPage(fragUrl);
-    const notes = extractNotes(pageHtml);
-    if (notes) return res.json({ notes, url: fragUrl });
-
-    res.json({ notes: null, url: fragUrl, error: 'Could not parse notes' });
-  } catch (e) {
-    res.json({ notes: null, error: e.message });
-  }
 }));
 
 // ---------- cart ----------
